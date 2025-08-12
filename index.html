@@ -1,373 +1,714 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Gift Board Generator (fixed)</title>
-<style>
-  :root{
-    --bg:#0f172a;
-    --panel:#111827;
-    --text:#e5e7eb;
-    --muted:#9ca3af;
-    --accent:#60a5fa;
-  }
-  *{box-sizing:border-box}
-  body{margin:0;background:#0b1220;color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";}
-  header{display:flex;gap:.75rem;align-items:center;padding:.75rem 1rem;border-bottom:1px solid #1f2937;background:#0f172a;position:sticky;top:0;z-index:10}
-  header h1{font-size:16px;margin:0;color:#c7d2fe}
-  .row{display:flex;gap:1rem;align-items:center;flex-wrap:wrap}
-  .field{display:flex;flex-direction:column;gap:.25rem}
-  .field label{font-size:12px;color:var(--muted)}
-  input[type="text"],input[type="number"],select{background:#0b1220;border:1px solid #233044;color:var(--text);padding:.45rem .6rem;border-radius:.5rem;min-width:140px}
-  button{background:#1d4ed8;border:0;color:white;padding:.5rem .75rem;border-radius:.5rem;cursor:pointer}
-  button.ghost{background:#374151}
-  button:disabled{opacity:.5;cursor:not-allowed}
-  main{display:grid;grid-template-columns: 1fr 320px;gap:1rem;padding:1rem}
-  @media (max-width: 1100px){ main{grid-template-columns: 1fr} }
-  .panel{background:#0f172a;border:1px solid #1f2937;border-radius:12px;padding:12px}
-  .list{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.5rem;max-height:60vh;overflow:auto}
-  .gift{border:1px solid #1f2937;border-radius:10px;padding:.5rem;display:flex;justify-content:space-between;align-items:center;background:#0b1220;cursor:pointer}
-  .gift:hover{outline:2px solid #2563eb}
-  .pill{font-size:11px;color:#fbbf24}
-  canvas{width:100%;height:auto;background:#0a0f1c;border-radius:12px;border:1px solid #1f2937}
-  .stack{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
-  .small{font-size:12px;color:var(--muted)}
-  .grid-controls{display:grid;grid-template-columns:repeat(6,minmax(120px,1fr));gap:.5rem}
-  @media (max-width: 900px){ .grid-controls{grid-template-columns:repeat(2,minmax(120px,1fr))} }
-  .placed{display:flex;gap:.5rem;overflow:auto;white-space:nowrap;padding:.5rem 0}
-  .chip{background:#0b1220;border:1px solid #1f2937;padding:.35rem .6rem;border-radius:999px}
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gift Board Generator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    html, body { background:#0f172a; color:#e5e7eb; }
+    canvas { image-rendering: crisp-edges; image-rendering: pixelated; }
+    .card { background:#0b1220; border:1px solid #23314d; border-radius:14px; }
+    .slot-card { min-width: 180px; }
+    .scrollbar-thin::-webkit-scrollbar { height: 10px; }
+    .scrollbar-thin::-webkit-scrollbar-thumb { background:#334155; border-radius:6px; }
+    .dragging { opacity: 0.6; }
+    .btn { @apply px-3 py-2 rounded-md bg-indigo-600 hover:bg-indigo-500 text-white text-sm; }
+    .btn-ghost { @apply px-3 py-2 rounded-md bg-slate-700 hover:bg-slate-600 text-white text-sm; }
+    input[type="range"] { accent-color:#6366f1; }
+    .label { @apply text-xs text-slate-300; }
+  </style>
 </head>
-<body>
-<header>
-  <h1>Gift Board Generator</h1>
-  <div class="row">
-    <div class="field"><label>（固定）Sheet ID</label><input type="text" id="sheetId" value="15QtBjbdETvUNL64JF46MvTvkfXaZI_jAtTphKQH6Y5U"></div>
-    <div class="field"><label>（固定）gid</label><input type="text" id="gid" value="1487601753"></div>
-    <div class="field"><label>（既定）CORSプロキシ</label><input type="text" id="proxy" value="https://blue-field-b0dc.katakura-yuuki-1121.workers.dev/?url="></div>
-    <button id="load">読み込む</button>
-    <button id="save" class="ghost">PNGとして保存</button>
-  </div>
-</header>
+<body class="min-h-screen">
+  <div class="mx-auto max-w-[1400px] p-4 space-y-4">
+    <h1 class="text-2xl font-semibold">Gift Board Generator</h1>
 
-<main>
-  <section class="panel">
-    <div class="stack" style="justify-content:space-between;margin-bottom:.5rem">
-      <div class="stack">
-        <div class="field">
-          <label>背景画像（ローカル）</label>
-          <input type="file" id="bgfile" accept="image/*">
+    <!-- Top controls -->
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div class="card p-3 space-y-2">
+        <div class="label">公開CSV直リンク（任意 / あればこちらが優先）</div>
+        <input id="csvUrl" type="text" class="w-full rounded bg-slate-800 border border-slate-600 px-2 py-2"
+          placeholder="https://docs.google.com/spreadsheets/d/e/.../pub?gid=...&single=true&output=csv">
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <div class="label">Sheet ID（固定）</div>
+            <input id="sheetId" type="text" class="w-full rounded bg-slate-800 border border-slate-600 px-2 py-2">
+          </div>
+          <div>
+            <div class="label">gid（固定）</div>
+            <input id="gid" type="text" class="w-full rounded bg-slate-800 border border-slate-600 px-2 py-2">
+          </div>
         </div>
-        <div class="field">
-          <label>背景URL</label>
-          <input type="text" id="bgurl" placeholder="https://example.com/bg.png">
-        </div>
-        <div class="field">
-          <label>プレビューでテキスト表示</label>
-          <select id="previewText">
-            <option value="on" selected>ON</option>
-            <option value="off">OFF</option>
+        <div class="label mt-2">CORSプロキシURL（既定）</div>
+        <input id="proxyUrl" type="text" class="w-full rounded bg-slate-800 border border-slate-600 px-2 py-2">
+        <div class="flex gap-2 mt-3">
+          <button id="loadBtn" class="btn">読み込む</button>
+          <label class="btn-ghost cursor-pointer">
+            背景画像を選ぶ
+            <input id="bgFile" class="hidden" type="file" accept="image/*">
+          </label>
+          <label class="btn-ghost cursor-pointer">
+            フォントを追加
+            <input id="fontFile" class="hidden" type="file" accept=".ttf,.otf,.woff,.woff2">
+          </label>
+          <select id="fontSel" class="rounded bg-slate-800 border border-slate-600 px-2 py-2 text-sm">
+            <option value="system-ui">system-ui</option>
           </select>
         </div>
       </div>
-      <div class="small">出力は幅1080pxに自動スケール（余白なし）</div>
+
+      <div class="card p-3 space-y-2">
+        <div class="grid grid-cols-3 gap-2">
+          <div>
+            <div class="label">列 (COLS)</div>
+            <input id="cols" type="number" class="w-full rounded bg-slate-800 border border-slate-600 px-2 py-2" min="1" value="6">
+          </div>
+          <div>
+            <div class="label">行 (ROWS)</div>
+            <input id="rows" type="number" class="w-full rounded bg-slate-800 border border-slate-600 px-2 py-2" min="1" value="3">
+          </div>
+          <div>
+            <div class="label">丸角 px</div>
+            <input id="radius" type="number" class="w-full rounded bg-slate-800 border border-slate-600 px-2 py-2" min="0" value="18">
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-2">
+          <div>
+            <div class="label">枠幅 TILE_W</div>
+            <input id="tileW" type="number" class="w-full rounded bg-slate-800 border border-slate-600 px-2 py-2" min="20" value="320">
+          </div>
+          <div>
+            <div class="label">枠高 TILE_H</div>
+            <input id="tileH" type="number" class="w-full rounded bg-slate-800 border border-slate-600 px-2 py-2" min="20" value="180">
+          </div>
+          <div>
+            <div class="label">枠間 GAP</div>
+            <input id="gap" type="number" class="w-full rounded bg-slate-800 border border-slate-600 px-2 py-2" min="0" value="20">
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-2">
+          <div>
+            <div class="label">左上オフセットX</div>
+            <input id="offX" type="number" class="w-full rounded bg-slate-800 border border-slate-600 px-2 py-2" value="0">
+          </div>
+          <div>
+            <div class="label">左上オフセットY</div>
+            <input id="offY" type="number" class="w-full rounded bg-slate-800 border border-slate-600 px-2 py-2" value="0">
+          </div>
+          <div>
+            <div class="label">ズーム</div>
+            <div class="flex items-center gap-2">
+              <input id="zoom" type="range" min="25" max="200" value="100" class="w-full">
+              <button id="rerender" class="btn-ghost">更新</button>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <label class="flex items-center gap-2"><input id="showText" type="checkbox" class="scale-125" checked> プレビューでテキスト表示</label>
+          <label class="flex items-center gap-2"><input id="includeTextInPng" type="checkbox" class="scale-125" checked> PNGにもテキストを含める</label>
+          <button id="savePng" class="btn ml-auto">PNGとして保存</button>
+        </div>
+      </div>
+
+      <div class="card p-3 space-y-2">
+        <div class="label">ギフト一覧（クリックで追加）</div>
+        <div id="giftList" class="grid grid-cols-2 gap-2 max-h-[300px] overflow-y-auto pr-1"></div>
+        <div class="text-xs text-slate-400">※ 必要カラム：Gift ID / Gift Name / Gift Cost / Gift Image URL</div>
+      </div>
     </div>
 
-    <div class="grid-controls">
-      <div class="field"><label>列 (COLS)</label><input type="number" id="cols" value="6" min="1"></div>
-      <div class="field"><label>行 (ROWS)</label><input type="number" id="rows" value="3" min="1"></div>
-      <div class="field"><label>枠幅 TILE_W</label><input type="number" id="tileW" value="320" min="40"></div>
-      <div class="field"><label>枠高 TILE_H</label><input type="number" id="tileH" value="180" min="40"></div>
-      <div class="field"><label>枠間 GAP</label><input type="number" id="gap" value="20" min="0"></div>
-      <div class="field"><label>角丸 px</label><input type="number" id="r" value="18" min="0"></div>
-    </div>
+    <!-- Preview + placed items -->
+    <div class="card p-3 space-y-3">
+      <div class="flex justify-between items-center">
+        <div class="text-sm text-slate-300">ライブプレビュー（幅は常に1080にスケール）</div>
+        <div id="canvasNote" class="text-xs text-slate-400"></div>
+      </div>
+      <div class="w-full overflow-auto">
+        <canvas id="cv" class="mx-auto block"></canvas>
+      </div>
 
-    <div class="stack" style="margin:.75rem 0">
-      <div class="field"><label>アイコン倍率（％／タイル基準）</label><input type="range" id="scale" min="50" max="180" value="100"></div>
-      <div class="field"><label>アイコン余白 px</label><input type="number" id="pad" min="0" value="14"></div>
-      <div class="field"><label>テキスト</label><input type="text" id="slotText" value=""></div>
-      <div class="field"><label>テキストサイズ px</label><input type="number" id="txtSize" min="10" value="86"></div>
-    </div>
+      <div>
+        <div class="flex justify-between items-center">
+          <div class="text-sm text-slate-300">配置中（ドラッグで並び替え / クリックで編集）</div>
+          <button id="clearPlaced" class="btn-ghost">クリア</button>
+        </div>
+        <div id="placedRow" class="mt-2 flex gap-2 overflow-x-auto scrollbar-thin"></div>
+      </div>
 
-    <canvas id="preview" width="1280" height="720"></canvas>
-    <div class="small" id="wh"></div>
-
-    <div style="margin-top:.5rem">
-      <div class="small">配置中（クリックで削除）</div>
-      <div id="placed" class="placed"></div>
+      <div id="editorPanel" class="grid gap-3"></div>
     </div>
-  </section>
-
-  <aside class="panel">
-    <div class="row" style="justify-content:space-between;margin-bottom:.5rem">
-      <div>ギフト一覧（クリックで追加）</div>
-      <button id="clear" class="ghost">クリア</button>
-    </div>
-    <div id="giftList" class="list"></div>
-    <div class="small" style="margin-top:.5rem">※ 必要カラム：Gift ID / Gift Name / Gift Cost / Gift Image URL</div>
-  </aside>
-</main>
+  </div>
 
 <script>
-// ---- Helpers ---------------------------------------------------------------
-const $ = sel => document.querySelector(sel);
-const giftListEl = $('#giftList');
-const preview = $('#preview');
-const ctx = preview.getContext('2d');
+(() => {
+  'use strict';
 
-let gifts = [];          // {id,name,cost,img}
-let placed = [];         // {gift, sx, sy, scale, text}
-let bgImage = null;      // Image element
-let bgURL = '';          // remote url (proxied)
-let board = {cols:6, rows:3, w:320, h:180, gap:20, r:18, pad:14, scale:1.0};
+  // ====== State ======
+  const state = {
+    gifts: [],           // {id, name, cost, imgUrl}
+    placed: [],          // {gift, text, iconScale, iconX, iconY, overlay?, textSize, textX, textY, textStroke, textAlign}
+    bg: null,            // {img, w, h}
+    userFont: null,      // {name, urlObject}
+    proxy: '',
+    lastCsvUrl: '',
+  };
 
-function proxify(url){
-  if(!url) return '';
-  const p = $('#proxy').value.trim();
-  if(url.startsWith('data:')) return url;
-  if(p && !url.startsWith(p)){
-    const join = p.includes('?') ? (p.endsWith('=')?'':'=') : (p.endsWith('/')?'':'/');
-    return p + (p.endsWith('=')? '': join) + encodeURIComponent(url);
+  // ====== DOM ======
+  const els = {
+    csvUrl: document.getElementById('csvUrl'),
+    sheetId: document.getElementById('sheetId'),
+    gid: document.getElementById('gid'),
+    proxyUrl: document.getElementById('proxyUrl'),
+    loadBtn: document.getElementById('loadBtn'),
+    bgFile: document.getElementById('bgFile'),
+    fontFile: document.getElementById('fontFile'),
+    fontSel: document.getElementById('fontSel'),
+    cols: document.getElementById('cols'),
+    rows: document.getElementById('rows'),
+    tileW: document.getElementById('tileW'),
+    tileH: document.getElementById('tileH'),
+    gap: document.getElementById('gap'),
+    radius: document.getElementById('radius'),
+    offX: document.getElementById('offX'),
+    offY: document.getElementById('offY'),
+    zoom: document.getElementById('zoom'),
+    showText: document.getElementById('showText'),
+    includeTextInPng: document.getElementById('includeTextInPng'),
+    rerender: document.getElementById('rerender'),
+    savePng: document.getElementById('savePng'),
+    canvas: document.getElementById('cv'),
+    canvasNote: document.getElementById('canvasNote'),
+    giftList: document.getElementById('giftList'),
+    placedRow: document.getElementById('placedRow'),
+    editorPanel: document.getElementById('editorPanel'),
+    clearPlaced: document.getElementById('clearPlaced'),
+  };
+
+  // ====== Defaults ======
+  const DEFAULT_SHEET_ID = '15QtBjbdETvUNL64JF46MvTvkfXaZI_jAtTphKQH6Y5U';
+  const DEFAULT_GID = '1487601753';
+  const DEFAULT_PROXY = 'https://blue-field-b0dc.katakura-yuuki-1121.workers.dev';
+
+  els.sheetId.value = DEFAULT_SHEET_ID;
+  els.gid.value = DEFAULT_GID;
+  els.proxyUrl.value = DEFAULT_PROXY;
+  state.proxy = DEFAULT_PROXY;
+
+  // Prefill CSV URL using Sheet ID/gid if empty (published CSV形式)
+  function buildCsvUrl(sheetId, gid) {
+    return `https://docs.google.com/spreadsheets/d/${encodeURIComponent(sheetId)}/export?format=csv&gid=${encodeURIComponent(gid)}`;
   }
-  return url;
-}
+  els.csvUrl.placeholder = buildCsvUrl(DEFAULT_SHEET_ID, DEFAULT_GID);
 
-// CSV parser (quoted cells supported)
-function parseCSV(text){
-  const rows = [];
-  let i=0, cell='', row=[], inq=false;
-  while(i < text.length){
-    const ch = text[i];
-    if(ch === '"'){
-      if(inq && text[i+1] === '"'){ cell += '"'; i+=2; }
-      else { inq = !inq; i++; }
-    }else if(ch === ',' && !inq){ row.push(cell); cell=''; i++; }
-    else if((ch === '\n' || ch === '\r') && !inq){
-      // push row only if anything read
-      if(ch === '\r' && text[i+1] === '\n') i++;
-      row.push(cell); rows.push(row); cell=''; row=[]; i++;
-    }else{ cell += ch; i++; }
+  // ====== Utils ======
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+  function parseCSV(text) {
+    // Minimal CSV parser that handles quoted fields and commas/newlines
+    const rows = [];
+    let i = 0, cell = '', row = [], inQ = false;
+    while (i < text.length) {
+      const ch = text[i];
+      if (inQ) {
+        if (ch === '"') {
+          if (text[i+1] === '"') { cell += '"'; i += 2; }
+          else { inQ = false; i++; }
+        } else { cell += ch; i++; }
+      } else {
+        if (ch === '"') { inQ = true; i++; }
+        else if (ch === ',') { row.push(cell); cell=''; i++; }
+        else if (ch === '\n') { row.push(cell); rows.push(row); cell=''; row=[]; i++; }
+        else if (ch === '\r') { i++; }
+        else { cell += ch; i++; }
+      }
+    }
+    row.push(cell); rows.push(row);
+    return rows;
   }
-  if(cell.length || row.length) { row.push(cell); rows.push(row); }
-  return rows;
-}
 
-// Load sheet
-async function loadSheet(){
-  const sheetId = $('#sheetId').value.trim();
-  const gid = $('#gid').value.trim();
-  const base = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
-  const url = proxify(base);
-  try{
-    const res = await fetch(url, {mode:'cors'});
-    if(!res.ok) throw new Error('HTTP '+res.status);
-    const csv = await res.text();
-    const rows = parseCSV(csv).filter(r=>r.length>0);
-    // find header indexes
-    const header = rows[0].map(h=>h.trim().toLowerCase());
-    const iId   = header.findIndex(h=>h.includes('gift id'));
-    const iName = header.findIndex(h=>h.includes('gift name'));
-    const iCost = header.findIndex(h=>h.includes('gift cost'));
-    const iImg  = header.findIndex(h=>h.includes('gift image'));
-    gifts = rows.slice(1).map(r=> ({
-      id: r[iId]||'',
-      name: r[iName]||'',
-      cost: r[iCost]||'',
-      img: (r[iImg]||'').replace(/^=HYPERLINK\\(\\s*"([^"]+)".*$/i, '$1')
-    })).filter(g=>g.name && g.img);
-    renderGiftList();
-  }catch(e){
-    alert('シート取得に失敗（CORS/権限/URL）\\n'+e);
-    console.error(e);
+  function extractHyperlink(v) {
+    const s = String(v || '');
+    if (!s.startsWith('=HYPERLINK(')) return s;
+    const first = s.indexOf('"');
+    if (first < 0) return s;
+    const second = s.indexOf('"', first + 1);
+    if (second < 0) return s;
+    return s.slice(first + 1, second);
   }
-}
 
-function renderGiftList(){
-  giftListEl.innerHTML = '';
-  for(const g of gifts){
-    const el = document.createElement('button');
-    el.className = 'gift';
-    el.innerHTML = `<span>${g.name}</span><span class="pill">🪙 ${g.cost||''}</span>`;
-    el.onclick = ()=>{
-      placed.push({gift:g, dx:0, dy:0, scale:+$('#scale').value/100, text:$('#slotText').value});
-      renderPlacedChips();
+  function h(tag, attrs = {}, ...children) {
+    const el = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs)) {
+      if (k === 'class') el.className = v;
+      else if (k === 'text') el.textContent = v;
+      else if (k.startsWith('on') && typeof v === 'function') el.addEventListener(k.slice(2), v);
+      else el.setAttribute(k, v);
+    }
+    for (const c of children) {
+      if (c == null) continue;
+      el.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
+    }
+    return el;
+  }
+
+  // Image cache via proxy
+  const imgCache = new Map();
+  async function fetchImageViaProxy(url) {
+    const tryUrls = [];
+    const px = (state.proxy || '').replace(/\/+$/,'');
+    if (px) {
+      tryUrls.push(`${px}?url=${encodeURIComponent(url)}`);
+      tryUrls.push(`${px}/raw?url=${encodeURIComponent(url)}`);
+      tryUrls.push(`${px}/${encodeURIComponent(url)}`);
+    }
+    tryUrls.push(url); // try direct last
+
+    let lastErr;
+    for (const u of tryUrls) {
+      try {
+        const res = await fetch(u, { mode: 'cors' });
+        if (!res.ok) throw new Error('HTTP '+res.status);
+        const blob = await res.blob();
+        return URL.createObjectURL(blob);
+      } catch (e) {
+        lastErr = e;
+      }
+    }
+    throw lastErr || new Error('fetch failed');
+  }
+
+  async function getImage(url) {
+    if (imgCache.has(url)) return imgCache.get(url);
+    const p = (async () => {
+      const objUrl = await fetchImageViaProxy(url);
+      const img = new Image();
+      img.src = objUrl;
+      await img.decode();
+      return img;
+    })();
+    imgCache.set(url, p);
+    return p;
+  }
+
+  // ====== Gifts loading ======
+  async function loadSheet() {
+    const csvLink = (els.csvUrl.value || '').trim();
+    const sid = (els.sheetId.value || '').trim();
+    const gid = (els.gid.value || '').trim();
+    state.proxy = (els.proxyUrl.value || '').trim();
+    const url = csvLink || buildCsvUrl(sid, gid);
+    state.lastCsvUrl = url;
+    try {
+      const prox = `${state.proxy.replace(/\/+$/,'')}?url=${encodeURIComponent(url)}`;
+      const res = await fetch(prox, { mode:'cors' });
+      if (!res.ok) throw new Error('HTTP '+res.status);
+      const txt = await res.text();
+      const rows = parseCSV(txt);
+      const header = rows[0].map(s => s.trim().toLowerCase());
+      const idx = {
+        id: header.findIndex(h => h.includes('gift id') || h === 'id'),
+        name: header.findIndex(h => h.includes('gift name') || h === 'name'),
+        cost: header.findIndex(h => h.includes('gift cost') || h === 'cost' || h.includes('coin')),
+        img: header.findIndex(h => h.includes('image')),
+      };
+      const gifts = [];
+      for (let r = 1; r < rows.length; r++) {
+        const row = rows[r];
+        if (!row.length) continue;
+        const id = row[idx.id]?.trim();
+        const name = row[idx.name]?.trim();
+        const cost = Number(row[idx.cost] || 0) || 0;
+        let imgUrl = extractHyperlink(row[idx.img]);
+        if (!imgUrl) continue;
+        gifts.push({ id, name, cost, imgUrl });
+      }
+      state.gifts = gifts;
+      renderGiftList();
+      // Reset placed
+      state.placed = [];
+      renderPlacedRow();
       render();
-    };
-    giftListEl.appendChild(el);
+    } catch (e) {
+      console.error(e);
+      alert('シート取得に失敗（CORS/権限/URL）');
+    }
   }
-}
 
-function renderPlacedChips(){
-  const wrap = $('#placed');
-  wrap.innerHTML = '';
-  placed.forEach((p,idx)=>{
-    const b = document.createElement('button');
-    b.className = 'chip';
-    b.textContent = `${idx+1}. ${p.gift.name}`;
-    b.title = 'クリックで削除';
-    b.onclick = ()=>{ placed.splice(idx,1); renderPlacedChips(); render(); };
-    wrap.appendChild(b);
+  function renderGiftList() {
+    els.giftList.innerHTML = '';
+    for (const g of state.gifts) {
+      const btn = h('button', { class: 'w-full text-left px-3 py-2 rounded bg-slate-800 hover:bg-slate-700 border border-slate-600' });
+      btn.append(
+        h('div', { class:'text-sm font-medium', text: g.name || '(no name)' }),
+        h('div', { class:'text-xs text-slate-400', text: `${g.cost ?? 0} coin` }),
+      );
+      btn.addEventListener('click', () => {
+        state.placed.push({
+          gift: g,
+          text: '',
+          iconScale: 100,
+          iconX: 0,
+          iconY: 0,
+          overlay: null, // {img, scale, x, y, opacity}
+          textSize: 72,
+          textX: 0,
+          textY: 0,
+          textStroke: true,
+          textAlign: 'center',
+        });
+        renderPlacedRow();
+        render();
+      });
+      els.giftList.appendChild(btn);
+    }
+  }
+
+  // ====== Placed row (cards) ======
+  function renderPlacedRow() {
+    els.placedRow.innerHTML = '';
+    state.placed.forEach((p, idx) => {
+      const card = h('div', { class:'slot-card card p-2 flex flex-col cursor-grab', draggable:'true' });
+      card.dataset.index = String(idx);
+      card.append(
+        h('div', { class:'text-[11px] text-slate-400', text: `#${idx+1}` }),
+        h('div', { class:'text-sm font-medium truncate', text: p.gift.name || '(no name)' }),
+        h('div', { class:'text-xs text-slate-500', text: `${p.gift.cost ?? 0} coin` }),
+        h('button', { class:'mt-2 btn-ghost', text:'編集', onclick: () => openEditor(idx) }),
+      );
+      // drag events
+      card.addEventListener('dragstart', (e) => {
+        card.classList.add('dragging');
+        e.dataTransfer.setData('text/plain', String(idx));
+      });
+      card.addEventListener('dragend', () => card.classList.remove('dragging'));
+      card.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        const from = Number(e.dataTransfer.getData('text/plain'));
+        const to = Number(card.dataset.index);
+        if (!Number.isInteger(from) || !Number.isInteger(to) || from === to) return;
+        const itm = state.placed.splice(from, 1)[0];
+        state.placed.splice(to, 0, itm);
+        renderPlacedRow();
+        render();
+      });
+      els.placedRow.appendChild(card);
+    });
+  }
+
+  function openEditor(index) {
+    const p = state.placed[index];
+    if (!p) return;
+    els.editorPanel.innerHTML = '';
+    const panel = h('div', { class:'card p-3 space-y-2' });
+    panel.append(h('div', { class:'text-sm text-slate-300' , text:`スロット編集 #${index+1}（${p.gift.name}）` }));
+
+    // text
+    panel.append(h('div', { class:'label', text:'スロットテキスト'}));
+    const tx = h('input', { type:'text', value:p.text, class:'w-full rounded bg-slate-800 border border-slate-600 px-2 py-2'});
+    tx.addEventListener('input', () => { p.text = tx.value; render(); });
+    panel.append(tx);
+
+    // icon controls
+    const row1 = h('div', { class:'grid grid-cols-4 gap-2' });
+    const scale = h('input', { type:'number', value:p.iconScale, class:'rounded bg-slate-800 border border-slate-600 px-2 py-2' });
+    const ix = h('input', { type:'number', value:p.iconX, class:'rounded bg-slate-800 border border-slate-600 px-2 py-2' });
+    const iy = h('input', { type:'number', value:p.iconY, class:'rounded bg-slate-800 border border-slate-600 px-2 py-2' });
+    const del = h('button', { class:'btn-ghost', text:'削除' });
+    row1.append(
+      h('div', {}, h('div',{class:'label',text:'アイコン倍率 %'},), scale),
+      h('div', {}, h('div',{class:'label',text:'アイコンX'},), ix),
+      h('div', {}, h('div',{class:'label',text:'アイコンY'},), iy),
+      del
+    );
+    scale.addEventListener('input', () => { p.iconScale = Number(scale.value)||0; render(); });
+    ix.addEventListener('input', () => { p.iconX = Number(ix.value)||0; render(); });
+    iy.addEventListener('input', () => { p.iconY = Number(iy.value)||0; render(); });
+    del.addEventListener('click', () => {
+      state.placed.splice(index,1);
+      els.editorPanel.innerHTML = '';
+      renderPlacedRow();
+      render();
+    });
+    panel.append(row1);
+
+    // overlay
+    const ovRow = h('div', { class:'grid grid-cols-5 gap-2 items-end'});
+    const ovLabel = h('div', { class:'label col-span-5', text:'追加画像（任意）'});
+    const file = h('input', { type:'file', accept:'image/*', class:'col-span-2' });
+    const ovScale = h('input', { type:'number', value: p.overlay?.scale ?? 100, class:'rounded bg-slate-800 border border-slate-600 px-2 py-2'});
+    const ovX = h('input', { type:'number', value: p.overlay?.x ?? 0, class:'rounded bg-slate-800 border border-slate-600 px-2 py-2'});
+    const ovY = h('input', { type:'number', value: p.overlay?.y ?? 0, class:'rounded bg-slate-800 border border-slate-600 px-2 py-2'});
+    const ovOp = h('input', { type:'number', value: p.overlay?.opacity ?? 100, class:'rounded bg-slate-800 border border-slate-600 px-2 py-2'});
+    panel.append(ovLabel);
+    ovRow.append(
+      file,
+      h('div',{}, h('div',{class:'label',text:'倍率 %'}), ovScale),
+      h('div',{}, h('div',{class:'label',text:'X'},), ovX),
+      h('div',{}, h('div',{class:'label',text:'Y'},), ovY),
+      h('div',{}, h('div',{class:'label',text:'不透明 %'},), ovOp),
+    );
+    panel.append(ovRow);
+    file.addEventListener('change', async () => {
+      const f = file.files?.[0];
+      if (!f) { p.overlay = null; render(); return; }
+      const url = URL.createObjectURL(f);
+      const img = new Image(); img.src = url; await img.decode();
+      p.overlay = { img, scale: Number(ovScale.value)||100, x:Number(ovX.value)||0, y:Number(ovY.value)||0, opacity:Number(ovOp.value)||100 };
+      render();
+    });
+    for (const [el, key] of [[ovScale,'scale'], [ovX,'x'], [ovY,'y'], [ovOp,'opacity']]) {
+      el.addEventListener('input', () => {
+        if (!p.overlay) p.overlay = { img:null, scale:100, x:0, y:0, opacity:100 };
+        p.overlay[key] = Number(el.value)||0;
+        render();
+      });
+    }
+
+    // Text controls
+    const txtGrid = h('div', { class:'grid grid-cols-4 gap-2' });
+    const tSize = h('input', { type:'number', value:p.textSize, class:'rounded bg-slate-800 border border-slate-600 px-2 py-2'});
+    const tX = h('input', { type:'number', value:p.textX, class:'rounded bg-slate-800 border border-slate-600 px-2 py-2'});
+    const tY = h('input', { type:'number', value:p.textY, class:'rounded bg-slate-800 border border-slate-600 px-2 py-2'});
+    const tStroke = h('label', { class:'flex items-center gap-2' },
+        h('input', { type:'checkbox', checked: p.textStroke ? 'checked': null }), h('span', {text:'縁'}));
+    const tAlign = h('select', { class:'rounded bg-slate-800 border border-slate-600 px-2 py-2'},
+        h('option', {value:'left', text:'左'}),
+        h('option', {value:'center', text:'中央'}),
+        h('option', {value:'right', text:'右'})
+    );
+    tAlign.value = p.textAlign || 'center';
+    txtGrid.append(
+      h('div',{}, h('div',{class:'label',text:'文字サイズ px'}), tSize),
+      h('div',{}, h('div',{class:'label',text:'文字X'},), tX),
+      h('div',{}, h('div',{class:'label',text:'文字Y'},), tY),
+      h('div',{}, h('div',{class:'label',text:'位置'},), tAlign),
+    );
+    panel.append(txtGrid);
+    tSize.addEventListener('input', () => { p.textSize = Number(tSize.value)||0; render(); });
+    tX.addEventListener('input', () => { p.textX = Number(tX.value)||0; render(); });
+    tY.addEventListener('input', () => { p.textY = Number(tY.value)||0; render(); });
+    tStroke.querySelector('input').addEventListener('change', (e) => { p.textStroke = e.target.checked; render(); });
+    tAlign.addEventListener('change', () => { p.textAlign = tAlign.value; render(); });
+
+    els.editorPanel.appendChild(panel);
+  }
+
+  // ====== Rendering ======
+  function roundedRect(ctx, x, y, w, h, r) {
+    const rr = Math.min(r, Math.floor(Math.min(w,h)/2));
+    ctx.beginPath();
+    ctx.moveTo(x+rr, y);
+    ctx.arcTo(x+w, y, x+w, y+h, rr);
+    ctx.arcTo(x+w, y+h, x, y+h, rr);
+    ctx.arcTo(x, y+h, x, y, rr);
+    ctx.arcTo(x, y, x+w, y, rr);
+    ctx.closePath();
+  }
+
+  function getDims() {
+    const cols = Number(els.cols.value) || 6;
+    const rows = Number(els.rows.value) || 3;
+    const W = Number(els.tileW.value) || 320;
+    const H = Number(els.tileH.value) || 180;
+    const GAP = Number(els.gap.value) || 20;
+    const r = Number(els.radius.value) || 18;
+    const offX = Number(els.offX.value) || 0;
+    const offY = Number(els.offY.value) || 0;
+    const boardW = cols*W + (cols-1)*GAP + offX*2;
+    const boardH = rows*H + (rows-1)*GAP + offY*2;
+    return { cols, rows, W, H, GAP, r, offX, offY, boardW, boardH };
+  }
+
+  function layoutForIndex(idx, dims) {
+    const { cols, W, H, GAP, offX, offY } = dims;
+    const c = idx % cols;
+    const r = Math.floor(idx / cols);
+    const x = offX + c*(W + GAP);
+    const y = offY + r*(H + GAP);
+    return { x, y };
+  }
+
+  function applyZoomCSS(boardW) {
+    const cv = els.canvas;
+    const zoom = (Number(els.zoom.value)||100) / 100;
+    const displayW = Math.round(1080 * zoom);
+    cv.style.width = displayW + 'px';
+    els.canvasNote.textContent = `表示幅: ${displayW}px / 基準 1080px`;
+  }
+
+  async function render(toBlobForSave=false) {
+    const dims = getDims();
+    // Canvas pixel size keeps aspect; we always scale width to 1080 for preview; internal pixel uses boardW/boardH ratio
+    const scaleTo1080 = 1080 / dims.boardW;
+    const cv = els.canvas;
+    // internal pixel size: base on board dims but scaled so width is exactly 1080 for sharp export preview
+    const internalW = Math.round(dims.boardW * scaleTo1080);
+    const internalH = Math.round(dims.boardH * scaleTo1080);
+    cv.width = internalW;
+    cv.height = internalH;
+    applyZoomCSS(dims.boardW); // CSS width
+    const ctx = cv.getContext('2d');
+    ctx.setTransform(scaleTo1080, 0, 0, scaleTo1080, 0, 0); // draw in board coordinates
+
+    // Background
+    ctx.clearRect(0,0,dims.boardW,dims.boardH);
+    if (state.bg?.img) {
+      // cover
+      const bg = state.bg.img;
+      const s = Math.max(dims.boardW/bg.width, dims.boardH/bg.height);
+      const dw = bg.width * s;
+      const dh = bg.height * s;
+      const dx = (dims.boardW - dw)/2;
+      const dy = (dims.boardH - dh)/2;
+      ctx.drawImage(bg, dx, dy, dw, dh);
+    } else {
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0,0,dims.boardW,dims.boardH);
+    }
+
+    // Grid
+    for (let r=0; r<dims.rows; r++) {
+      for (let c=0; c<dims.cols; c++) {
+        const x = dims.offX + c*(dims.W + dims.GAP);
+        const y = dims.offY + r*(dims.H + dims.GAP);
+        ctx.save();
+        ctx.globalAlpha = 0.9;
+        roundedRect(ctx, x, y, dims.W, dims.H, dims.r);
+        ctx.fillStyle = 'rgba(0,0,0,0.25)';
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'rgba(116,132,168,0.45)';
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    // Items
+    for (let i=0; i<state.placed.length; i++) {
+      const p = state.placed[i];
+      const cell = layoutForIndex(i, dims);
+      // Icon
+      try {
+        const img = await getImage(p.gift.imgUrl);
+        const baseW = dims.W; // scale relative to tile width
+        const scale = (p.iconScale || 100) / 100;
+        const iw = Math.min(img.width, img.height);
+        const ratio = img.height / img.width;
+        const drawW = baseW * 0.75 * scale;
+        const drawH = drawW * ratio;
+        const cx = cell.x + dims.W/2 + (p.iconX||0);
+        const cy = cell.y + dims.H/2 + (p.iconY||0);
+        ctx.drawImage(img, cx - drawW/2, cy - drawH/2, drawW, drawH);
+      } catch (e) {
+        // ignore
+      }
+
+      // Overlay
+      if (p.overlay?.img) {
+        const baseW = dims.W;
+        const s = (p.overlay.scale || 100) / 100;
+        const dw = baseW * 0.75 * s;
+        const ratio = p.overlay.img.height / p.overlay.img.width;
+        const dh = dw * ratio;
+        const cx = cell.x + dims.W/2 + (p.overlay.x||0);
+        const cy = cell.y + dims.H/2 + (p.overlay.y||0);
+        ctx.save();
+        ctx.globalAlpha = (p.overlay.opacity || 100)/100;
+        ctx.drawImage(p.overlay.img, cx - dw/2, cy - dh/2, dw, dh);
+        ctx.restore();
+      }
+
+      // Text
+      if (els.showText.checked || (toBlobForSave && els.includeTextInPng.checked)) {
+        const t = (p.text || '').trim();
+        if (t) {
+          const cx = cell.x + dims.W/2 + (p.textX||0);
+          const cy = cell.y + dims.H/2 + (p.textY||0);
+          const size = p.textSize || 72;
+          const fontName = state.userFont?.name || 'system-ui';
+          ctx.save();
+          ctx.font = `bold ${size}px "${fontName}"`;
+          ctx.textAlign = p.textAlign || 'center';
+          ctx.textBaseline = 'middle';
+          if (p.textStroke) {
+            ctx.lineWidth = Math.max(4, Math.floor(size/10));
+            ctx.strokeStyle = 'rgba(0,0,0,0.9)';
+            ctx.strokeText(t, cx, cy);
+          }
+          ctx.fillStyle = '#ffffff';
+          ctx.fillText(t, cx, cy);
+          ctx.restore();
+        }
+      }
+    }
+  }
+
+  // ====== Events ======
+  els.loadBtn.addEventListener('click', loadSheet);
+  els.proxyUrl.addEventListener('change', () => { state.proxy = els.proxyUrl.value.trim(); imgCache.clear(); });
+  els.bgFile.addEventListener('change', async () => {
+    const f = els.bgFile.files?.[0];
+    if (!f) { state.bg = null; render(); return; }
+    const url = URL.createObjectURL(f);
+    const img = new Image(); img.src = url; await img.decode();
+    state.bg = { img, w: img.width, h: img.height };
+    render();
   });
-}
-
-function roundRect(ctx, x, y, w, h, r){
-  r = Math.min(r, w/2, h/2);
-  ctx.beginPath();
-  ctx.moveTo(x+r, y);
-  ctx.arcTo(x+w, y, x+w, y+h, r);
-  ctx.arcTo(x+w, y+h, x, y+h, r);
-  ctx.arcTo(x, y+h, x, y, r);
-  ctx.arcTo(x, y, x+w, y, r);
-  ctx.closePath();
-}
-
-function drawBackground(ctx, W, H){
-  if(!bgImage){ ctx.fillStyle = '#0a1221'; ctx.fillRect(0,0,W,H); return; }
-  // cover fit
-  const iw = bgImage.naturalWidth, ih = bgImage.naturalHeight;
-  const scale = Math.max(W/iw, H/ih);
-  const dw = iw*scale, dh = ih*scale;
-  const dx = (W-dw)/2, dy = (H-dh)/2;
-  ctx.drawImage(bgImage, dx, dy, dw, dh);
-}
-
-async function loadImage(url){
-  return new Promise((resolve,reject)=>{
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = ()=>resolve(img);
-    img.onerror = reject;
-    img.src = url;
+  els.fontFile.addEventListener('change', async () => {
+    const f = els.fontFile.files?.[0];
+    if (!f) return;
+    const url = URL.createObjectURL(f);
+    const name = f.name.replace(/\.(ttf|otf|woff2?|TTF|OTF|WOFF2?)$/,'');
+    const ff = new FontFace(name, `url(${url})`);
+    await ff.load();
+    document.fonts.add(ff);
+    state.userFont = { name, urlObject: url };
+    const opt = document.createElement('option');
+    opt.value = name; opt.textContent = name;
+    els.fontSel.appendChild(opt);
+    els.fontSel.value = name;
+    render();
   });
-}
+  els.fontSel.addEventListener('change', () => {
+    const v = els.fontSel.value;
+    if (v === 'system-ui') state.userFont = null;
+    else state.userFont = { name: v };
+    render();
+  });
 
-async function render(toPNG=false){
-  // read controls
-  board.cols = +$('#cols').value;
-  board.rows = +$('#rows').value;
-  board.w = +$('#tileW').value;
-  board.h = +$('#tileH').value;
-  board.gap = +$('#gap').value;
-  board.r = +$('#r').value;
-  board.pad = +$('#pad').value;
-  const drawText = $('#previewText').value === 'on';
-  const txtSize = +$('#txtSize').value;
-  // compute board size
-  const W = board.cols*board.w + (board.cols-1)*board.gap;
-  const H = board.rows*board.h + (board.rows-1)*board.gap;
-  // set canvas size for crisp preview
-  preview.width = W;
-  preview.height = H;
-  $('#wh').textContent = `描画サイズ: ${W}×${H} → 保存時 1080px幅にスケール`;
-
-  // background
-  drawBackground(ctx, W, H);
-
-  // grid
-  const R = board.r;
-  for(let y=0;y<board.rows;y++){
-    for(let x=0;x<board.cols;x++){
-      const left = x*(board.w+board.gap);
-      const top  = y*(board.h+board.gap);
-      ctx.save();
-      roundRect(ctx, left, top, board.w, board.h, R);
-      ctx.clip();
-      // subtle inner panel
-      ctx.fillStyle = 'rgba(255,255,255,0.02)';
-      ctx.fillRect(left, top, board.w, board.h);
-      ctx.restore();
-      // outline
-      ctx.strokeStyle = 'rgba(255,255,255,0.08)';
-      ctx.lineWidth = 2;
-      roundRect(ctx, left, top, board.w, board.h, R);
-      ctx.stroke();
-    }
+  for (const id of ['cols','rows','tileW','tileH','gap','radius','offX','offY','zoom','showText','includeTextInPng']) {
+    els[id].addEventListener('input', () => render());
   }
+  els.rerender.addEventListener('click', () => render());
 
-  // draw each placed gift into grid order (left to right, top to bottom)
-  // If more placed than cells, render within first N cells
-  const cells = [];
-  for(let y=0;y<board.rows;y++)
-    for(let x=0;x<board.cols;x++)
-      cells.push({x,y,left:x*(board.w+board.gap),top:y*(board.h+board.gap)});
+  els.savePng.addEventListener('click', async () => {
+    await render(true);
+    els.canvas.toBlob((blob) => {
+      if (!blob) return;
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'gift_board.png';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    });
+  });
 
-  for(let i=0;i<Math.min(placed.length, cells.length);i++){
-    const cell = cells[i];
-    const p = placed[i];
-    // load image (with proxy) & cache on object
-    if(!p._img && p.gift.img){
-      try{ p._img = await loadImage(proxify(p.gift.img)); }
-      catch(e){ console.warn('img load failed', p.gift.img); p._img=null; }
-    }
-    if(p._img){
-      const iw = p._img.naturalWidth, ih = p._img.naturalHeight;
-      const scale = p.scale || (+$('#scale').value/100);
-      // fit by shorter side inside tile minus pad
-      const tw = board.w - board.pad*2;
-      const th = board.h - board.pad*2;
-      const s = Math.min(tw/iw, th/ih) * scale;
-      const dw = iw*s, dh = ih*s;
-      const cx = cell.left + board.w/2 + (p.dx||0);
-      const cy = cell.top  + board.h/2 + (p.dy||0);
-      ctx.drawImage(p._img, cx - dw/2, cy - dh/2, dw, dh);
-    }
-    if(drawText && p.text){
-      ctx.font = `600 ${txtSize}px system-ui, sans-serif`;
-      ctx.fillStyle = 'white';
-      ctx.strokeStyle = 'rgba(0,0,0,.8)';
-      ctx.lineWidth = Math.max(2, txtSize*0.12);
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      const tx = cell.left + board.w/2;
-      const ty = cell.top + board.h/2;
-      ctx.strokeText(p.text, tx, ty);
-      ctx.fillText(p.text, tx, ty);
-    }
-  }
+  els.clearPlaced.addEventListener('click', () => {
+    state.placed = [];
+    renderPlacedRow();
+    els.editorPanel.innerHTML = '';
+    render();
+  });
 
-  if(toPNG){
-    // composite → scale to 1080 width
-    const outW = 1080;
-    const scale = outW / W;
-    const outH = Math.round(H * scale);
-    const out = document.createElement('canvas');
-    out.width = outW; out.height = outH;
-    const octx = out.getContext('2d');
-    octx.imageSmoothingEnabled = true;
-    octx.imageSmoothingQuality = 'high';
-    octx.drawImage(preview, 0, 0, outW, outH);
-    const a = document.createElement('a');
-    a.download = 'gift_board.png';
-    a.href = out.toDataURL('image/png');
-    a.click();
-  }
-}
-
-// events
-$('#load').onclick = loadSheet;
-$('#save').onclick = ()=>render(true);
-document.querySelectorAll('#cols,#rows,#tileW,#tileH,#gap,#r,#pad,#scale,#txtSize,#previewText').forEach(el=>{
-  el.addEventListener('input', ()=>render());
-});
-
-$('#bgfile').addEventListener('change', async (e)=>{
-  const file = e.target.files?.[0];
-  if(!file) return;
-  const url = URL.createObjectURL(file);
-  bgImage = await loadImage(url);
-  render();
-});
-$('#bgurl').addEventListener('change', async (e)=>{
-  const url = proxify(e.target.value.trim());
-  if(!url) return;
-  try{ bgImage = await loadImage(url); render(); }
-  catch(err){ alert('背景の読み込みに失敗しました'); }
-});
-$('#clear').onclick = ()=>{ placed = []; renderPlacedChips(); render(); };
-
-// initial
-render();
+  // ====== Init ======
+  // Try auto-load with defaults on first open (best effort)
+  (async () => {
+    try {
+      await loadSheet();
+    } catch {}
+    render();
+  })();
+})();
 </script>
 </body>
 </html>

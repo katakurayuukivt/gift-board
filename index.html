@@ -1,601 +1,644 @@
 <!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Gift Board — GitHub Pages版</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ギフトボード画像生成（クリーン版）</title>
   <style>
     :root{
-      --bg:#0e1218; --card:#151a23; --muted:#9aa7b8; --accent:#60a5fa; --edge:#263244;
-      --ink:#e5e7eb; --ink-weak:#cbd5e1;
+      --bg:#0e1218; --panel:#161b24; --muted:#9aa4b2; --line:#243041; --accent:#60a5fa;
+      --btn:#1a2433; --ink:#e5e7eb;
     }
-    *{ box-sizing:border-box; }
-    html,body{ height:100%; }
-    body{ margin:0; background:var(--bg); color:var(--ink); font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans JP",sans-serif; }
-    button, input, select { font-family: inherit; }
-    .wrap{ display:grid; grid-template-columns: 1fr 360px; gap:16px; padding:16px; }
-    header{ display:flex; gap:12px; align-items:center; padding:12px 16px; border-bottom:1px solid #202633; }
-    header .pill{ background:#0c1119; border:1px solid var(--edge); color:var(--ink); border-radius:10px; padding:8px 12px; font-size:13px; }
-    header .pill code{ color:#bcd0e6; }
-    header .spacer{ flex:1; }
-    header .btn{ background:var(--accent); color:#061020; border:none; border-radius:10px; padding:10px 14px; font-weight:700; cursor:pointer; }
-    .panel{ background:var(--card); border:1px solid var(--edge); border-radius:14px; padding:14px; }
-    .title{ font-weight:800; margin-bottom:10px; color:#d8e2f0; }
-
-    .grid2{ display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:10px; }
-    .grid3{ display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:10px; }
-    .row{ display:flex; gap:8px; align-items:center; }
-    label{ color:var(--muted); font-size:12px; }
-    input[type="text"], input[type="number"], select{
-      width:100%; background:#0b0f15; color:#fff; border:1px solid #2a3446; border-radius:8px; padding:8px 10px;
-    }
-    input[type="range"]{ width:100%; }
-    .btn{ background:#223045; color:#e8eef9; border:1px solid #2a384d; border-radius:10px; padding:8px 10px; cursor:pointer; }
-    .btn.primary{ background:var(--accent); color:#05101e; border:none; font-weight:700; }
-
-    /* 左側 */
-    .previewWrap{ display:flex; flex-direction:column; gap:12px; }
-    #previewHolder{ position:relative; overflow:auto; background:#0a0f16; border:1px dashed #2a3446; border-radius:12px; padding:12px; }
-    #preview{ display:block; max-width:none; image-rendering: auto; }
-    .zoomRow{ display:flex; gap:10px; align-items:center; }
-    .zoomRow span{ font-size:12px; color:var(--muted); }
-
-    /* 右側 */
-    .lists{ display:flex; flex-direction:column; gap:16px; }
-    .giftList{ display:grid; grid-template-columns: 1fr 1fr; gap:8px; max-height:40vh; overflow:auto; }
-    .gift{ background:#0f1623; border:1px solid #2a3446; border-radius:12px; padding:10px; text-align:left; cursor:pointer; }
-    .gift .nm{ font-weight:800; }
-    .gift .co{ color:#f0d32f; font-size:12px; }
-    .slots{ display:grid; grid-template-columns: repeat(1, minmax(0,1fr)); gap:8px; max-height:40vh; overflow:auto; }
-    .slot{ background:#0f1623; border:1px solid #2a3446; border-radius:12px; padding:10px; display:flex; align-items:center; justify-content:space-between; gap:10px; }
-    .slot .l{ display:flex; align-items:center; gap:8px; }
-    .slot img{ width:36px; height:36px; object-fit:contain; background:#0b0f15; border:1px solid #2a3446; border-radius:8px; }
-    .slot .cap{ color:#8fa1b6; font-size:12px; }
-    .slot .rm{ color:#f87171; cursor:pointer; }
-    .note{ color:var(--muted); font-size:12px; }
-
-    .kbd{ font: 12px/1.3 ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace; background:#0b0f15; border:1px solid #2a3446; padding:2px 6px; border-radius:6px; }
-
-    @media (max-width: 1000px){
-      .wrap{ grid-template-columns: 1fr; }
-      .giftList, .slots { max-height:none; }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans JP",sans-serif}
+    header{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:12px;border-bottom:1px solid var(--line)}
+    header .info{display:flex;gap:8px;align-items:center}
+    header .pill{background:#0b0f15;border:1px solid var(--line);border-radius:10px;padding:6px 10px;font-size:12px;color:var(--muted)}
+    header input[type="text"]{background:#0b0f15;border:1px solid var(--line);color:#fff;border-radius:8px;padding:8px 10px;min-width:280px}
+    header button{background:var(--accent);color:#0b1020;border:none;border-radius:10px;padding:10px 14px;font-weight:700;cursor:pointer}
+    header .ghost{background:var(--btn);color:#c9d3e0}
+    main{display:grid;grid-template-columns: 1fr 380px;gap:14px;padding:14px}
+    .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px}
+    .title{font-weight:800;margin-bottom:10px}
+    .grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+    .row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .field{display:flex;flex-direction:column;gap:6px}
+    .field label{font-size:12px;color:var(--muted)}
+    .field input[type="text"], .field input[type="number"], .field select {background:#0b0f15;border:1px solid var(--line);color:#fff;border-radius:8px;padding:8px 10px}
+    .field input[type="color"]{width:52px;height:34px;border:none;border-radius:6px;background:#0b0f15}
+    .field .slider{width:100%}
+    .live{background:#0b0f15;border:1px solid var(--line);border-radius:12px;height:560px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+    .live canvas{max-width:100%;max-height:100%}
+    .list{display:grid;grid-template-columns:1fr;gap:8px;max-height:420px;overflow:auto}
+    .gift{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:12px;background:#0f1623;border:1px solid #2a3448;cursor:pointer}
+    .slots{display:grid;grid-template-columns:1fr;gap:8px;max-height:340px;overflow:auto;margin-top:10px}
+    .slotrow{display:flex;align-items:center;gap:10px;background:#0f1623;border:1px solid #2a3448;border-radius:12px;padding:8px 10px}
+    .slotrow img{width:44px;height:44px;object-fit:contain;background:#0b0f15;border:1px solid #2a3448;border-radius:8px}
+    .danger{color:#f87171;cursor:pointer}
+    .muted{color:var(--muted);font-size:12px}
+    .sep{height:1px;background:var(--line);margin:10px 0}
+    .row3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .btnline{display:flex;gap:8px;align-items:center}
+    .note{margin-top:6px;color:var(--muted);font-size:12px}
+    @media (max-width: 980px){
+      main{grid-template-columns:1fr}
     }
   </style>
 </head>
 <body>
   <header>
-    <div class="pill">Sheet ID: <code id="sheetIdText"></code></div>
-    <div class="pill">gid: <code id="gidText"></code></div>
-    <div class="pill">CORSプロキシ（任意・PNG出力時のみ推奨）
-      <input id="proxy" placeholder="例）https://api.allorigins.win/raw?url=" style="width:340px; margin-left:8px;" />
+    <div class="info">
+      <div class="pill">Sheet ID 固定</div>
+      <div class="pill" id="sid">15QtBjbdETvUNL64JF46MvTvkfXaZI_jAtTphKQH6Y5U</div>
+      <div class="pill">gid 固定</div>
+      <div class="pill" id="sgid">1487601753</div>
     </div>
-    <button class="btn" id="loadBtn">読み込む</button>
-    <div class="spacer"></div>
-    <input id="bgFile" type="file" accept="image/*" style="display:none" />
-    <button class="btn" id="pickBgBtn">背景画像を選ぶ</button>
-    <button class="btn primary" id="saveBtn">PNGとして保存</button>
+    <div class="info">
+      <input id="proxy" type="text" placeholder="任意: CORSプロキシURL（例 https://api.allorigins.win/raw?url=）">
+      <button id="loadBtn" class="ghost">読み込む</button>
+    </div>
+    <div class="info" style="margin-left:auto">
+      <button id="pickBg" class="ghost">背景画像を選ぶ</button>
+      <input id="bgFile" type="file" accept="image/*" style="display:none">
+      <button id="saveBtn">PNGとして保存</button>
+    </div>
   </header>
 
-  <div class="wrap">
-    <section class="panel previewWrap">
+  <main>
+    <section class="panel">
       <div class="title">ライブプレビュー</div>
-      <div class="grid3">
-        <div>
-          <label>列 (COLS)</label>
-          <input type="number" id="cols" value="6" min="1" max="12" />
+
+      <div class="grid2">
+        <div class="field">
+          <label>列（COLS）</label>
+          <input id="cols" type="number" value="6" min="1" max="12">
         </div>
-        <div>
-          <label>行 (ROWS)</label>
-          <input type="number" id="rows" value="3" min="1" max="8" />
+        <div class="field">
+          <label>行（ROWS）</label>
+          <input id="rows" type="number" value="3" min="1" max="10">
         </div>
-        <div>
+
+        <div class="field">
           <label>枠幅 TILE_W</label>
-          <input type="number" id="tileW" value="320" />
+          <input id="tileW" type="number" value="320" min="10" max="2000">
         </div>
-        <div>
+        <div class="field">
           <label>枠高 TILE_H</label>
-          <input type="number" id="tileH" value="180" />
+          <input id="tileH" type="number" value="180" min="10" max="2000">
         </div>
-        <div>
+
+        <div class="field">
           <label>枠間 GAP</label>
-          <input type="number" id="gap" value="20" />
+          <input id="gap" type="number" value="20" min="0" max="300">
         </div>
-        <div>
+        <div class="field">
           <label>丸角 px</label>
-          <input type="number" id="radius" value="18" />
+          <input id="radius" type="number" value="18" min="0" max="200">
         </div>
-        <div>
+
+        <div class="field">
           <label>左上オフセット X</label>
-          <input type="number" id="offX" value="0" />
+          <input id="offX" type="number" value="0" min="-2000" max="2000">
         </div>
-        <div>
+        <div class="field">
           <label>左上オフセット Y</label>
-          <input type="number" id="offY" value="0" />
+          <input id="offY" type="number" value="0" min="-2000" max="2000">
         </div>
-        <div>
-          <label>ガイド枠描画</label>
-          <select id="guide"><option>ON</option><option>OFF</option></select>
-        </div>
-      </div>
 
-      <div class="grid3" style="margin-top:8px">
-        <div>
+        <div class="field">
           <label>アイコン倍率（% / タイル基準）</label>
-          <input type="range" id="iconScale" min="40" max="180" value="100" />
+          <input id="iconScale" class="slider" type="range" min="30" max="200" value="100">
+          <div class="muted">現在: <span id="iconScaleView">100</span>%</div>
         </div>
-        <div>
-          <label>アイコン余白（px）</label>
-          <input type="number" id="iconPad" value="14" />
+        <div class="field">
+          <label>アイコン余白 px（枠中央の余白）</label>
+          <input id="iconPad" type="number" value="14" min="0" max="200">
         </div>
-        <div>
+
+        <div class="field">
           <label>はみ出しOK（タイル外へ）</label>
-          <select id="overflow"><option>OFF</option><option>ON</option></select>
+          <select id="overflowOK">
+            <option value="0">OFF</option>
+            <option value="1">ON</option>
+          </select>
         </div>
-      </div>
+        <div class="field">
+          <label>ガイド枠描画</label>
+          <select id="guideOn">
+            <option value="1">ON</option>
+            <option value="0">OFF</option>
+          </select>
+        </div>
 
-      <div class="grid3" style="margin-top:8px">
-        <div>
+        <div class="field">
           <label>テキスト</label>
-          <input type="text" id="labelText" value="テスト" />
+          <input id="labelText" type="text" value="テスト">
         </div>
-        <div>
+        <div class="field">
           <label>文字サイズ px</label>
-          <input type="number" id="labelSize" value="86" />
+          <input id="labelSize" type="number" value="86" min="8" max="400">
         </div>
-        <div class="row" style="margin-top:18px">
+
+        <div class="field">
           <label>色</label>
-          <input type="color" id="labelColor" value="#ffffff" style="width:60px">
-          <label>縁</label>
-          <input type="checkbox" id="labelStroke" checked />
-        </div>
-        <div>
-          <label>横位置</label>
-          <select id="labelAlignX">
-            <option value="left">左</option>
-            <option value="center" selected>中央</option>
-            <option value="right">右</option>
-          </select>
-        </div>
-        <div>
-          <label>縦位置</label>
-          <select id="labelAlignY">
-            <option value="top">上</option>
-            <option value="middle" selected>中央</option>
-            <option value="bottom">下</option>
-          </select>
-        </div>
-        <div class="grid2">
-          <div>
-            <label>文字オフセット X</label>
-            <input type="number" id="labelOffX" value="0" />
+          <div class="btnline">
+            <input id="labelColor" type="color" value="#ffffff">
+            <label class="muted"><input id="labelStroke" type="checkbox" checked> 縁</label>
+            <input id="labelStrokeColor" type="color" value="#000000">
           </div>
-          <div>
-            <label>文字オフセット Y</label>
-            <input type="number" id="labelOffY" value="0" />
+        </div>
+        <div class="field">
+          <label>テキスト位置</label>
+          <div class="row3">
+            <select id="labelH">
+              <option value="left">左</option>
+              <option value="center" selected>中央</option>
+              <option value="right">右</option>
+            </select>
+            <select id="labelV">
+              <option value="top">上</option>
+              <option value="center" selected>中央</option>
+              <option value="bottom">下</option>
+            </select>
+            <div></div>
           </div>
+        </div>
+        <div class="field">
+          <label>文字オフセット X</label>
+          <input id="labelDx" type="number" value="0" min="-2000" max="2000">
+        </div>
+        <div class="field">
+          <label>文字オフセット Y</label>
+          <input id="labelDy" type="number" value="0" min="-2000" max="2000">
         </div>
       </div>
 
-      <div id="previewHolder">
+      <div class="sep"></div>
+
+      <div class="live">
         <canvas id="preview"></canvas>
       </div>
-      <div class="zoomRow">
+
+      <div class="btnline" style="margin-top:10px">
         <span>ズーム</span>
-        <input id="zoom" type="range" min="50" max="200" value="100" />
-        <span><span id="zoomVal">100</span>%</span>
-        <button class="btn" id="rerender">更新</button>
+        <input id="zoom" class="slider" type="range" min="60" max="200" value="100" style="flex:1">
+        <span id="zoomView">100%</span>
+        <button id="refresh" class="ghost">更新</button>
       </div>
-      <div class="note">※ 生成PNGはガイドや枠・テキストは描画しません（アイコン画像のみ）。</div>
+      <div class="note">生成PNGはガイドや枠・テキストは描画しません（アイコン画像のみ）。</div>
     </section>
 
-    <section class="lists">
-      <div class="panel">
-        <div class="title">ギフト一覧（クリックで追加）</div>
-        <div id="giftList" class="giftList"></div>
-        <div class="row" style="margin-top:8px">
-          <button class="btn" id="clearBtn">クリア</button>
-        </div>
-        <div class="note">必要カラム：<b>Gift ID / Gift Name / Gift Cost / Gift Image URL</b></div>
+    <section class="panel">
+      <div class="title">ギフト一覧（クリックで追加）</div>
+      <div class="list" id="list"></div>
+      <div class="btnline" style="margin-top:8px">
+        <button id="clear" class="ghost">クリア</button>
       </div>
 
-      <div class="panel">
-        <div class="title">配置中（最大 任意の行×列）</div>
-        <div id="slots" class="slots"></div>
-      </div>
+      <div class="sep"></div>
+      <div class="title">配置中（最大 任意の行×列）</div>
+      <div id="slots" class="slots"></div>
     </section>
-  </div>
-
-  <canvas id="export" style="display:none"></canvas>
+  </main>
 
 <script>
-(() => {
-  // ===== 固定シート設定（変更可） =====
+(function(){
+  "use strict";
+
+  // ===== 固定のシートID / gid =====
   const SHEET_ID = "15QtBjbdETvUNL64JF46MvTvkfXaZI_jAtTphKQH6Y5U";
   const GID = "1487601753";
-  document.getElementById('sheetIdText').textContent = SHEET_ID;
-  document.getElementById('gidText').textContent = GID;
+  document.getElementById("sid").textContent = SHEET_ID;
+  document.getElementById("sgid").textContent = GID;
 
-  // ====== 状態 ======
-  const state = {
-    all: [],         // 全ギフト
-    picked: [],      // 選択済み（スロット順）
-    bgImg: null,     // 背景Image
-    previewScale: 1, // 表示用ズーム
-  };
+  // ===== UI要素 =====
+  const elProxy = document.getElementById("proxy");
+  const elList  = document.getElementById("list");
+  const elSlots = document.getElementById("slots");
+  const elPrev  = document.getElementById("preview");
 
-  // ===== DOM =====
-  const el = (id)=>document.getElementById(id);
-  const listEl = el('giftList');
-  const slotsEl = el('slots');
-  const preview = el('preview');
-  const ctx = preview.getContext('2d');
-  const exportCV = el('export');
-  const ectx = exportCV.getContext('2d');
+  const elCols = document.getElementById("cols");
+  const elRows = document.getElementById("rows");
+  const elTileW= document.getElementById("tileW");
+  const elTileH= document.getElementById("tileH");
+  const elGap  = document.getElementById("gap");
+  const elRadius = document.getElementById("radius");
+  const elOffX = document.getElementById("offX");
+  const elOffY = document.getElementById("offY");
+  const elIconScale = document.getElementById("iconScale");
+  const elIconScaleView = document.getElementById("iconScaleView");
+  const elIconPad = document.getElementById("iconPad");
+  const elOverflow = document.getElementById("overflowOK");
+  const elGuide = document.getElementById("guideOn");
 
-  const inputs = {
-    cols: el('cols'),
-    rows: el('rows'),
-    tileW: el('tileW'),
-    tileH: el('tileH'),
-    gap: el('gap'),
-    radius: el('radius'),
-    offX: el('offX'),
-    offY: el('offY'),
-    guide: el('guide'),
-    iconScale: el('iconScale'),
-    iconPad: el('iconPad'),
-    overflow: el('overflow'),
-    labelText: el('labelText'),
-    labelSize: el('labelSize'),
-    labelColor: el('labelColor'),
-    labelStroke: el('labelStroke'),
-    labelAlignX: el('labelAlignX'),
-    labelAlignY: el('labelAlignY'),
-    labelOffX: el('labelOffX'),
-    labelOffY: el('labelOffY'),
-    zoom: el('zoom'),
-    zoomVal: el('zoomVal'),
-    proxy: el('proxy'),
-  };
+  const elLabelText = document.getElementById("labelText");
+  const elLabelSize = document.getElementById("labelSize");
+  const elLabelColor = document.getElementById("labelColor");
+  const elLabelStroke = document.getElementById("labelStroke");
+  const elLabelStrokeColor = document.getElementById("labelStrokeColor");
+  const elLabelH = document.getElementById("labelH");
+  const elLabelV = document.getElementById("labelV");
+  const elLabelDx = document.getElementById("labelDx");
+  const elLabelDy = document.getElementById("labelDy");
 
-  // ===== CSV utils =====
-  function csvToRows(text){
-    const rows=[]; let i=0, cell='', row=[], inQ=false;
-    while(i<text.length){
-      const ch = text[i];
-      if(inQ){
-        if(ch==='"'){ if(text[i+1]==='"'){ cell+='"'; i+=2; } else { inQ=false; i++; } }
-        else { cell+=ch; i++; }
-      } else {
-        if(ch==='"'){ inQ=true; i++; }
-        else if(ch===','){ row.push(cell); cell=''; i++; }
-        else if(ch==='
-'){ row.push(cell); rows.push(row); cell=''; row=[]; i++; }
-        else if(ch===''){ i++; }
-        else { cell+=ch; i++; }
-      }
-    }
-    if(cell!=='' || row.length) { row.push(cell); rows.push(row); }
-    return rows;
+  const elZoom = document.getElementById("zoom");
+  const elZoomView = document.getElementById("zoomView");
+
+  const elBgFile = document.getElementById("bgFile");
+  const elPickBg = document.getElementById("pickBg");
+
+  // ===== 状態 =====
+  let allGifts = [];
+  let picked = [];
+  let bgBitmap = null;
+  let lastBgName = "";
+
+  // ===== CSV/GViz util =====
+  function parseGViz(text){
+    const start = text.indexOf("{");
+    const end = text.lastIndexOf("}");
+    if(start === -1 || end === -1) throw new Error("GViz parse error");
+    return JSON.parse(text.slice(start, end+1));
   }
-
-  async function loadSheet(){
-    const base = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID}`;
-    const userProxy = (inputs.proxy.value||'').trim();
+  function getCellUrl(cell){
+    // gviz cell can be: null | {v:any, f:string, p:{link:string}} | {v:"http..."}
+    if(!cell) return "";
+    if(typeof cell.v === "string" && /^https?:/i.test(cell.v)) return cell.v.trim();
+    if(cell.p && typeof cell.p.link === "string") return cell.p.link.trim();
+    if(cell.f && typeof cell.f === "string"){
+      const m = cell.f.match(/href="([^"]+)"/i);
+      if(m) return m[1].trim();
+    }
+    return "";
+  }
+  async function fetchTextWithFallback(url, userProxyPrefix){
     const candidates = [];
-    if(userProxy) candidates.push(userProxy + encodeURIComponent(base));
-    candidates.push(`https://api.allorigins.win/raw?url=${encodeURIComponent(base)}`);
-    candidates.push(base);
-
+    if(userProxyPrefix && userProxyPrefix.trim().length>0){
+      candidates.push(userProxyPrefix.trim() + encodeURIComponent(url));
+    }
+    candidates.push(url); // direct
+    // final fallback: allorigins (even if not provided)
+    if(!userProxyPrefix) candidates.push("https://api.allorigins.win/raw?url=" + encodeURIComponent(url));
     for(const u of candidates){
       try{
-        const res = await fetch(u, { cache:'no-store' });
+        const res = await fetch(u, {cache:"no-store"});
         if(!res.ok) continue;
-        const txt = await res.text();
-        const rows = csvToRows(txt);
-        const header = rows[0].map(h=>h.trim());
-        const map = Object.fromEntries(header.map((h,i)=>[h,i]));
-        const data = rows.slice(1).map(r => ({
-          id: r[map['Gift ID']] || '',
-          name: r[map['Gift Name']] || '',
-          cost: Number(r[map['Gift Cost']] || 0),
-          imageUrl: extractUrl(r[map['Gift Image URL']] || '')
-        })).filter(g => g.id && g.name && g.imageUrl);
-        if(data.length){
-          state.all = data;
-          return true;
-        }
-      }catch(e){ /* try next */ }
+        const tx = await res.text();
+        if(tx && tx.length>20) return tx;
+      }catch(e){}
     }
-    throw new Error('シート取得に失敗（CORS/権限/URL）');
+    throw new Error("fetch failed");
+  }
+  async function loadSheet(){
+    const url = "https://docs.google.com/spreadsheets/d/"+SHEET_ID+"/gviz/tq?tqx=out:json&gid="+GID;
+    const txt = await fetchTextWithFallback(url, elProxy.value);
+    const json = parseGViz(txt);
+    // build header map
+    const cols = json.table.cols.map(c => (c && c.label) ? c.label.trim() : "");
+    const idx = {};
+    cols.forEach((h,i)=>{ idx[h]=i; });
+    const rows = json.table.rows || [];
+    const gifts = [];
+    for(const r of rows){
+      if(!r || !r.c) continue;
+      const c = r.c;
+      const id   = (c[idx["Gift ID"]] && c[idx["Gift ID"]].v) ? String(c[idx["Gift ID"]].v).trim() : "";
+      const name = (c[idx["Gift Name"]] && c[idx["Gift Name"]].v) ? String(c[idx["Gift Name"]].v).trim() : "";
+      const cost = (c[idx["Gift Cost"]] && c[idx["Gift Cost"]].v) ? Number(c[idx["Gift Cost"]].v) : 0;
+      const img  = getCellUrl(c[idx["Gift Image URL"]]);
+      if(id && name && img) gifts.push({id, name, cost, imageUrl: img});
+    }
+    return gifts;
   }
 
-  // = HYPERLINK("URL","表示") を素直に取り出す（CSVが表示テキストでもURLが紛れていた時用）
-  function extractUrl(s){
-    const t = (s||'').trim();
-    if(/^https?:\/\//i.test(t)) return t;
-    const m = t.match(/https?:\/\/[^\s")]+/i);
-    return m ? m[0] : t;
-  }
-
-  // ===== 画像取得（プロキシ→直） =====
-  async function fetchImageBlob(rawUrl){
-    const user = (inputs.proxy.value||'').trim();
+  // ===== 画像取得（Blob -> ObjectURL or ImageBitmap） =====
+  async function fetchImageBlob(urlRaw){
+    const user = (elProxy.value || "").trim();
     const cand = [];
-    if(user) cand.push(user + encodeURIComponent(rawUrl));
-    try {
-      const u = new URL(rawUrl);
-      cand.push(`https://images.weserv.nl/?url=${u.host}${u.pathname}${u.search}`);
-    } catch {}
-    cand.push(rawUrl);
-
-    for(const url of cand){
+    if(user) cand.push(user + encodeURIComponent(urlRaw));
+    try{
+      const u = new URL(urlRaw);
+      cand.push("https://images.weserv.nl/?url=" + u.host + u.pathname + u.search);
+    }catch(e){}
+    cand.push(urlRaw);
+    for(const u of cand){
       try{
-        const r = await fetch(url, { cache:'no-store' });
+        const r = await fetch(u, {cache:"no-store"});
         if(!r.ok) continue;
         const b = await r.blob();
-        if((b.type||'').startsWith('image/')) return b;
-      }catch{}
+        if((b.type||"").startsWith("image/")) return b;
+      }catch(e){}
     }
-    throw new Error('画像取得失敗');
+    throw new Error("image fetch failed");
   }
-  async function blobToBitmap(blob){ return await createImageBitmap(blob); }
-
-  // ===== レンダリング =====
-  function gridSize(){
-    const COLS=+inputs.cols.value, ROWS=+inputs.rows.value, W=+inputs.tileW.value, H=+inputs.tileH.value, GAP=+inputs.gap.value;
-    const gw = COLS*W + (COLS+1)*GAP;
-    const gh = ROWS*H + (ROWS+1)*GAP;
-    return {gw, gh, COLS, ROWS, W, H, GAP};
-  }
-  function clearCanvas(c){
-    const cx = c.getContext('2d');
-    cx.clearRect(0,0,c.width,c.height);
-  }
-  function roundRectPath(cx, x,y,w,h,r){
-    cx.beginPath();
-    cx.moveTo(x+r,y);
-    cx.arcTo(x+w,y,x+w,y+h,r);
-    cx.arcTo(x+w,y+h,x,y+h,r);
-    cx.arcTo(x,y+h,x,y,r);
-    cx.arcTo(x,y,x+w,y,r);
-    cx.closePath();
+  function setImgFromBlob(imgEl, blob){
+    const url = URL.createObjectURL(blob);
+    imgEl.onload = () => URL.revokeObjectURL(url);
+    imgEl.src = url;
   }
 
-  async function ensureThumbnails(gift){
-    if(gift._bmp) return gift._bmp;
+  // ===== UI描画 =====
+  function renderList(){
+    elList.innerHTML = "";
+    for(const g of allGifts){
+      const b = document.createElement("div");
+      b.className = "gift";
+      b.innerHTML = '<div>'+escapeHtml(g.name)+'</div><div class="muted">🪙 '+g.cost+'</div>';
+      b.onclick = ()=>{
+        picked.push({id:g.id, name:g.name, cost:g.cost, imageUrl:g.imageUrl});
+        renderSlots();
+        draw();
+      };
+      elList.appendChild(b);
+    }
+  }
+  function renderSlots(){
+    elSlots.innerHTML = "";
+    picked.forEach((g,i)=>{
+      const row = document.createElement("div");
+      row.className = "slotrow";
+      const img = document.createElement("img");
+      // thumbnail load (no crash on failure)
+      fetchImageBlob(g.imageUrl).then(b=>setImgFromBlob(img,b)).catch(()=>{});
+      const name = document.createElement("div");
+      name.textContent = g.name + " / 🪙" + g.cost;
+      name.style.flex = "1";
+      const a = document.createElement("div");
+      a.className = "danger";
+      a.textContent = "削除";
+      a.onclick = ()=>{ picked.splice(i,1); renderSlots(); draw(); };
+      row.appendChild(img); row.appendChild(name); row.appendChild(a);
+      elSlots.appendChild(row);
+    });
+  }
+
+  // ===== 背景の読み込み =====
+  elPickBg.addEventListener("click", ()=> elBgFile.click());
+  elBgFile.addEventListener("change", async (e)=>{
+    if(!e.target.files || !e.target.files[0]) return;
+    const file = e.target.files[0];
+    lastBgName = file.name;
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.src = url;
     try{
-      const blob = await fetchImageBlob(gift.imageUrl);
-      gift._bmp = await blobToBitmap(blob);
-      return gift._bmp;
-    }catch{
-      gift._bmp = null;
-      return null;
+      await img.decode();
+      if("createImageBitmap" in window){
+        bgBitmap = await createImageBitmap(img);
+      }else{
+        // fallback: draw to canvas then create bitmap-like object
+        const cv = document.createElement("canvas");
+        cv.width = img.naturalWidth; cv.height = img.naturalHeight;
+        const cx = cv.getContext("2d");
+        cx.drawImage(img,0,0);
+        bgBitmap = img;
+      }
+      URL.revokeObjectURL(url);
+      draw();
+    }catch(e){
+      alert("背景の読み込みに失敗しました");
     }
+  });
+
+  // ===== プレビュー描画 =====
+  function rrect(ctx,x,y,w,h,r){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.arcTo(x+w,y,x+w,y+h,r);
+    ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r);
+    ctx.arcTo(x,y,x+w,y,r);
+    ctx.closePath();
+  }
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, (m)=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]));
   }
 
-  async function renderPreview(){
-    const {gw,gh,COLS,ROWS,W,H,GAP} = gridSize();
-    const offX=+inputs.offX.value, offY=+inputs.offY.value;
-    const radius=+inputs.radius.value;
-    const guide = inputs.guide.value==='ON';
-    const iconScale = +inputs.iconScale.value/100;
-    const pad = +inputs.iconPad.value;
-    const centerX = inputs.labelAlignX.value;
-    const centerY = inputs.labelAlignY.value;
-    const lTxt = inputs.labelText.value;
-    const lSize=+inputs.labelSize.value;
-    const lColor=inputs.labelColor.value;
-    const lStroke=inputs.labelStroke.checked;
-    const lOffX=+inputs.labelOffX.value, lOffY=+inputs.labelOffY.value;
+  function getLayout(){
+    const cols = Math.max(1, parseInt(elCols.value||"6",10));
+    const rows = Math.max(1, parseInt(elRows.value||"3",10));
+    const w = parseInt(elTileW.value||"320",10);
+    const h = parseInt(elTileH.value||"180",10);
+    const gap = parseInt(elGap.value||"20",10);
+    const rad = parseInt(elRadius.value||"18",10);
+    const offx = parseInt(elOffX.value||"0",10);
+    const offy = parseInt(elOffY.value||"0",10);
+    const s = parseInt(elIconScale.value||"100",10)/100;
+    const pad = parseInt(elIconPad.value||"14",10);
+    const overflow = elOverflow.value === "1";
+    const guide = elGuide.value === "1";
 
-    // canvas size
-    preview.width = gw + offX*2;
-    preview.height= gh + offY*2;
-    clearCanvas(preview);
+    const gridW = cols*w + (cols+1)*gap;
+    const gridH = rows*h + (rows+1)*gap;
 
-    // 背景（プレビューは薄く）
-    if(state.bgImg){
-      ctx.globalAlpha = 1;
-      ctx.drawImage(state.bgImg, 0, 0, preview.width, preview.height);
+    return {cols,rows,w,h,gap,rad,offx,offy,s,pad,overflow,guide,gridW,gridH};
+  }
+
+  function draw(){
+    const ctx = elPrev.getContext("2d");
+    // decide preview canvas size by zoom
+    const zoom = parseInt(elZoom.value||"100",10)/100;
+    const baseW = bgBitmap ? bgBitmap.width : 1280;
+    const baseH = bgBitmap ? bgBitmap.height: 720;
+    elPrev.width = Math.round(baseW * zoom);
+    elPrev.height= Math.round(baseH * zoom);
+    ctx.save();
+    ctx.scale(zoom, zoom);
+
+    // background
+    if(bgBitmap){
+      ctx.drawImage(bgBitmap, 0, 0);
     }else{
-      // 背景が無い時: 無地
-      ctx.fillStyle = '#0a121a'; ctx.fillRect(0,0,preview.width, preview.height);
+      ctx.fillStyle = "#0a1016";
+      ctx.fillRect(0,0,baseW,baseH);
     }
 
-    // ガイド枠
-    if(guide){
-      for(let r=0;r<ROWS;r++){
-        for(let c=0;c<COLS;c++){
-          const x = offX + GAP + c*(W+GAP);
-          const y = offY + GAP + r*(H+GAP);
-          roundRectPath(ctx, x,y,W,H,radius);
-          ctx.fillStyle = 'rgba(0,0,0,0.25)';
-          ctx.fill();
-          ctx.strokeStyle = 'rgba(180,200,230,0.14)';
-          ctx.lineWidth = 2;
+    const L = getLayout();
+    const gx = Math.round((baseW - L.gridW)/2) + L.offx;
+    const gy = Math.round((baseH - L.gridH)/2) + L.offy;
+
+    // guides
+    if(L.guide){
+      ctx.strokeStyle = "rgba(255,255,255,0.15)";
+      ctx.lineWidth = 2;
+      for(let r=0;r<L.rows;r++){
+        for(let c=0;c<L.cols;c++){
+          const x = gx + L.gap + c*(L.w+L.gap);
+          const y = gy + L.gap + r*(L.h+L.gap);
+          rrect(ctx,x,y,L.w,L.h,L.rad);
           ctx.stroke();
         }
       }
     }
 
-    // アイコン
-    for(let i=0;i<state.picked.length;i++){
-      const g = state.picked[i];
-      if(!g) continue;
-      const r = Math.floor(i / COLS);
-      const c = i % COLS;
-      if(r>=ROWS) break;
+    // icons (draw only what is placed)
+    for(let i=0;i<Math.min(picked.length, L.rows*L.cols); i++){
+      const g = picked[i];
+      const r = Math.floor(i / L.cols);
+      const c = i % L.cols;
+      const x = gx + L.gap + c*(L.w+L.gap);
+      const y = gy + L.gap + r*(L.h+L.gap);
 
-      const x = offX + GAP + c*(W+GAP);
-      const y = offY + GAP + r*(H+GAP);
+      // draw placeholder box
+      // actual image
+      // For preview: load as ImageBitmap per draw cycle is heavy; instead cache object URL on row item image if needed.
+      // Here we just draw via HTMLImageElement created once per slot.
+    }
 
-      const bmp = await ensureThumbnails(g);
+    // text overlay (preview only)
+    const label = elLabelText.value||"";
+    if(label){
+      ctx.font = "900 "+parseInt(elLabelSize.value||"86",10)+"px system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans JP', sans-serif";
+      ctx.textAlign = (elLabelH.value==="left" ? "left" : elLabelH.value==="right" ? "right" : "center");
+      ctx.textBaseline = (elLabelV.value==="top" ? "top" : elLabelV.value==="bottom" ? "bottom" : "middle");
+      let tx = baseW/2, ty = baseH/2;
+      if(elLabelH.value==="left") tx = 30;
+      if(elLabelH.value==="right") tx = baseW-30;
+      if(elLabelV.value==="top") ty = 40;
+      if(elLabelV.value==="bottom") ty = baseH-40;
+      tx += parseInt(elLabelDx.value||"0",10);
+      ty += parseInt(elLabelDy.value||"0",10);
+      if(elLabelStroke.checked){
+        ctx.lineWidth = Math.max(4, Math.round(parseInt(elLabelSize.value||"86",10)/12));
+        ctx.strokeStyle = elLabelStrokeColor.value||"#000000";
+        ctx.strokeText(label, tx, ty);
+      }
+      ctx.fillStyle = elLabelColor.value||"#ffffff";
+      ctx.fillText(label, tx, ty);
+    }
+
+    ctx.restore();
+
+    // After backgrounds/guides/text, draw thumbnails of icons into preview using DOM composition:
+    // We'll overlay absolutely-positioned <img> over the canvas is complex.
+    // Simpler: pre-render bitmaps cache and draw. Implement a lightweight cache:
+    drawIconsOnPreview();
+  }
+
+  const imageCache = new Map();
+  async function getBitmap(url){
+    if(imageCache.has(url)) return imageCache.get(url);
+    try{
+      const blob = await fetchImageBlob(url);
+      const bmp = await createImageBitmap(blob);
+      imageCache.set(url, bmp);
+      return bmp;
+    }catch(e){
+      imageCache.set(url, null);
+      return null;
+    }
+  }
+
+  async function drawIconsOnPreview(){
+    const ctx = elPrev.getContext("2d");
+    const zoom = parseInt(elZoom.value||"100",10)/100;
+    ctx.save();
+    ctx.scale(zoom, zoom);
+    const baseW = elPrev.width/zoom;
+    const baseH = elPrev.height/zoom;
+    const L = getLayout();
+    const gx = Math.round((baseW - L.gridW)/2) + L.offx;
+    const gy = Math.round((baseH - L.gridH)/2) + L.offy;
+
+    for(let i=0;i<Math.min(picked.length, L.rows*L.cols); i++){
+      const g = picked[i];
+      const r = Math.floor(i / L.cols);
+      const c = i % L.cols;
+      const x = gx + L.gap + c*(L.w+L.gap);
+      const y = gy + L.gap + r*(L.h+L.gap);
+      const bmp = await getBitmap(g.imageUrl);
       if(!bmp) continue;
-
-      const areaW = Math.max(1, W - pad*2);
-      const areaH = Math.max(1, H - pad*2);
-      const ratio = Math.min(areaW / bmp.width, areaH / bmp.height) * iconScale;
-      const iw = bmp.width * ratio;
-      const ih = bmp.height * ratio;
-      const ix = x + (W - iw)/2;
-      const iy = y + (H - ih)/2;
+      const maxW = Math.max(10, L.w - L.pad*2);
+      const maxH = Math.max(10, L.h - L.pad*2);
+      const scale = L.s * Math.min(maxW/bmp.width, maxH/bmp.height);
+      const iw = bmp.width * scale;
+      const ih = bmp.height * scale;
+      let ix = x + (L.w - iw)/2;
+      let iy = y + (L.h - ih)/2;
+      if(!L.overflow){
+        // clamp inside tile
+        ix = Math.max(ix, x); iy = Math.max(iy, y);
+      }
       ctx.drawImage(bmp, ix, iy, iw, ih);
     }
-
-    // テキスト（プレビューのみ）
-    if(lTxt){
-      ctx.save();
-      ctx.font = `800 ${lSize}px system-ui, -apple-system, Segoe UI, Roboto, Noto Sans JP, sans-serif`;
-      ctx.fillStyle = lColor;
-      ctx.textBaseline = 'middle';
-      let tx = preview.width/2, ty = preview.height/2;
-      if(centerX==='left') tx = 0 + 40;
-      if(centerX==='right') tx = preview.width - 40;
-      if(centerY==='top') ty = 0 + 40;
-      if(centerY==='bottom') ty = preview.height - 40;
-      tx += lOffX; ty += lOffY;
-      ctx.textAlign = (centerX==='left'?'left':(centerX==='right'?'right':'center'));
-      if(lStroke){
-        ctx.lineWidth = Math.max(4, Math.floor(lSize/16));
-        ctx.strokeStyle = 'rgba(0,0,0,0.75)';
-        ctx.strokeText(lTxt, tx, ty);
-      }
-      ctx.fillText(lTxt, tx, ty);
-      ctx.restore();
-    }
+    ctx.restore();
   }
 
-  function applyZoom(){
-    const z = +inputs.zoom.value/100;
-    state.previewScale = z;
-    inputs.zoomVal.textContent = Math.round(z*100);
-    document.getElementById('preview').style.transform = `scale(${z})`;
-    document.getElementById('preview').style.transformOrigin = '0 0';
-  }
-
-  // ===== UI =====
-  function renderGiftList(){
-    listEl.innerHTML = '';
-    for(const g of state.all){
-      const b = document.createElement('button');
-      b.className = 'gift';
-      b.innerHTML = `<div class="nm">${escapeHtml(g.name)}</div><div class="co">🪙 ${g.cost}</div>`;
-      b.onclick = ()=>{ state.picked.push({...g}); renderSlots(); renderPreview(); };
-      listEl.appendChild(b);
-    }
-  }
-  function renderSlots(){
-    slotsEl.innerHTML = '';
-    for(let i=0;i<state.picked.length;i++){
-      const g = state.picked[i];
-      const div = document.createElement('div');
-      div.className = 'slot';
-      const left = document.createElement('div');
-      left.className = 'l';
-      const img = document.createElement('img');
-      img.alt = g.name;
-      fetchImageBlob(g.imageUrl).then(b=>{
-        const url = URL.createObjectURL(b); img.src = url; img.onload=()=>URL.revokeObjectURL(url);
-      }).catch(()=>{});
-      const cap = document.createElement('div');
-      cap.innerHTML = `<div class="nm">${escapeHtml(g.name)}</div><div class="cap">🪙 ${g.cost} / ${g.id}</div>`;
-      left.appendChild(img); left.appendChild(cap);
-      const rm = document.createElement('div');
-      rm.className = 'rm'; rm.textContent = '削除';
-      rm.onclick = ()=>{ state.picked.splice(i,1); renderSlots(); renderPreview(); };
-      div.appendChild(left); div.appendChild(rm);
-      slotsEl.appendChild(div);
-    }
-  }
-  function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
-
-  // ===== PNG出力（アイコンのみ） =====
+  // ===== PNG生成（画像のみ） =====
   async function exportPNG(){
-    if(!state.bgImg){ alert('背景画像を選択してください'); return; }
-    const {gw,gh,COLS,ROWS,W,H,GAP} = gridSize();
-    const offX=+inputs.offX.value, offY=+inputs.offY.value;
-    const iconScale = +inputs.iconScale.value/100;
-    const pad = +inputs.iconPad.value;
+    if(!bgBitmap){ alert("背景画像を選択してください"); return; }
+    const cv = document.createElement("canvas");
+    cv.width = bgBitmap.width;
+    cv.height= bgBitmap.height;
+    const ctx = cv.getContext("2d");
+    ctx.drawImage(bgBitmap,0,0);
 
-    exportCV.width = state.bgImg.width;
-    exportCV.height= state.bgImg.height;
-    ectx.clearRect(0,0,exportCV.width,exportCV.height);
-    // 背景に合わせてグリッドを中央に載せる
-    const gridW = gw + offX*2;
-    const gridH = gh + offY*2;
-    const ox = (exportCV.width - gridW)/2;
-    const oy = (exportCV.height - gridH)/2;
+    const L = getLayout();
+    const gx = Math.round((cv.width - L.gridW)/2) + L.offx;
+    const gy = Math.round((cv.height - L.gridH)/2) + L.offy;
 
-    // 背景
-    ectx.drawImage(state.bgImg, 0, 0);
-
-    // アイコン
-    for(let i=0;i<state.picked.length;i++){
-      const g = state.picked[i];
-      if(!g) continue;
-      const r = Math.floor(i / COLS);
-      const c = i % COLS;
-      if(r>=ROWS) break;
-
-      const x = ox + offX + GAP + c*(W+GAP);
-      const y = oy + offY + GAP + r*(H+GAP);
-
+    for(let i=0;i<Math.min(picked.length, L.rows*L.cols); i++){
+      const g = picked[i];
+      const r = Math.floor(i / L.cols);
+      const c = i % L.cols;
+      const x = gx + L.gap + c*(L.w+L.gap);
+      const y = gy + L.gap + r*(L.h+L.gap);
       try{
-        const blob = await fetchImageBlob(g.imageUrl);
-        const bmp = await blobToBitmap(blob);
-        const areaW = Math.max(1, W - pad*2);
-        const areaH = Math.max(1, H - pad*2);
-        const ratio = Math.min(areaW / bmp.width, areaH / bmp.height) * iconScale;
-        const iw = bmp.width * ratio;
-        const ih = bmp.height * ratio;
-        const ix = x + (W - iw)/2;
-        const iy = y + (H - ih)/2;
-        ectx.drawImage(bmp, ix, iy, iw, ih);
-      }catch{}
+        const bmp = await getBitmap(g.imageUrl);
+        if(!bmp) continue;
+        const maxW = Math.max(10, L.w - L.pad*2);
+        const maxH = Math.max(10, L.h - L.pad*2);
+        const scale = L.s * Math.min(maxW/bmp.width, maxH/bmp.height);
+        const iw = bmp.width * scale;
+        const ih = bmp.height * scale;
+        let ix = x + (L.w - iw)/2;
+        let iy = y + (L.h - ih)/2;
+        if(!L.overflow){
+          ix = Math.max(ix, x); iy = Math.max(iy, y);
+        }
+        ctx.drawImage(bmp, ix, iy, iw, ih);
+      }catch(e){}
     }
 
     try{
-      const url = exportCV.toDataURL('image/png');
-      const a = document.createElement('a');
-      a.href = url; a.download = 'gift_board.png'; a.click();
-    }catch{
-      alert('PNG生成に失敗しました');
+      const url = cv.toDataURL("image/png");
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "gift_board.png";
+      a.click();
+    }catch(e){
+      alert("出力に失敗しました");
     }
   }
 
-  document.getElementById('pickBgBtn').addEventListener('click', ()=> document.getElementById('bgFile').click());
-  document.getElementById('bgFile').addEventListener('change', async (ev)=>{
-    const f = ev.target.files && ev.target.files[0];
-    if(!f) return;
-    const img = new Image();
-    img.onload = ()=>{ state.bgImg = img; renderPreview(); };
-    img.onerror = ()=> alert('背景画像の読み込みに失敗しました');
-    img.src = URL.createObjectURL(f);
-  });
-
-  document.getElementById('loadBtn').onclick = async ()=>{
+  // ===== イベント =====
+  function bindRedraw(el){ el.addEventListener("input", draw); el.addEventListener("change", draw); }
+  [elCols,elRows,elTileW,elTileH,elGap,elRadius,elOffX,elOffY,elIconScale,elIconPad,elOverflow,elGuide,
+   elLabelText,elLabelSize,elLabelColor,elLabelStroke,elLabelStrokeColor,elLabelH,elLabelV,elLabelDx,elLabelDy
+  ].forEach(bindRedraw);
+  elIconScale.addEventListener("input", ()=>{ elIconScaleView.textContent = elIconScale.value; });
+  elZoom.addEventListener("input", ()=>{ elZoomView.textContent = elZoom.value+"%"; draw(); });
+  document.getElementById("refresh").onclick = draw;
+  document.getElementById("clear").onclick = ()=>{ picked=[]; renderSlots(); draw(); };
+  document.getElementById("loadBtn").onclick = async ()=>{
     try{
-      state.picked = []; renderSlots();
-      await loadSheet();
-      renderGiftList();
-      renderPreview();
+      picked = [];
+      renderSlots();
+      allGifts = await loadSheet();
+      renderList();
+      draw();
     }catch(e){
       console.error(e);
-      alert('シートの読み込みに失敗しました。権限とURLを確認してください。');
+      alert("シートの読み込みに失敗しました。権限とURLを確認してください。");
     }
   };
-  document.getElementById('rerender').onclick = renderPreview;
-  document.getElementById('saveBtn').onclick = exportPNG;
-  document.getElementById('clearBtn').onclick = ()=>{ state.picked=[]; renderSlots(); renderPreview(); };
-  inputs.zoom.addEventListener('input', applyZoom);
-  for(const k of ['cols','rows','tileW','tileH','gap','radius','offX','offY','guide','iconScale','iconPad','overflow','labelText','labelSize','labelColor','labelStroke','labelAlignX','labelAlignY','labelOffX','labelOffY']){
-    inputs[k].addEventListener('input', ()=>{ renderPreview(); });
-  }
-  applyZoom();
-  renderPreview();
-  document.getElementById('loadBtn').click(); // 初回自動ロード
-})();
-</script>
+  document.getElementById("saveBtn").onclick = exportPNG;
+
+  // 初期描画
+  draw();
+
+})();</script>
+
 </body>
 </html>

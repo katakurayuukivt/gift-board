@@ -69,6 +69,13 @@ canvas{max-width:100%;max-height:100%}
       </div>
       <div style="align-self:end"><button id="loadBtn" class="primary">読み込む</button></div>
       <div style="align-self:end"><button id="bgBtn">背景画像を選ぶ</button><input id="bgFile" type="file" accept="image/*" style="display:none"></div>
+
+      <div style="align-self:end">
+        <button id="fontBtn">フォントを選ぶ</button>
+        <input id="fontFile" type="file" accept=".ttf,.otf,.woff,.woff2" style="display:none">
+        <div class="small">使用中: <span id="fontName">System UI</span></div>
+      </div>
+
       <div style="align-self:end" class="rowmid">
         <label><input id="exportText" type="checkbox" checked> PNGにテキストを含める</label>
       </div>
@@ -139,7 +146,8 @@ canvas{max-width:100%;max-height:100%}
     slots: [],
     bgBitmap: null,
     canvasW: 1080,
-    canvasH: 608
+    canvasH: 608,
+    fontFamily: null // uploaded font family name (null => system-ui)
   };
 
   // ======= DOM =======
@@ -171,6 +179,9 @@ canvas{max-width:100%;max-height:100%}
 
   const elZoom = document.getElementById('zoom');
   const elZoomVal = document.getElementById('zoomVal');
+  const elFontBtn = document.getElementById('fontBtn');
+  const elFontFile = document.getElementById('fontFile');
+  const elFontName = document.getElementById('fontName');
 
   // Buttons
   document.getElementById('loadBtn').onclick = onLoadSheet;
@@ -179,6 +190,8 @@ canvas{max-width:100%;max-height:100%}
   document.getElementById('saveBtn').onclick = () => exportPNG();
   document.getElementById('bgBtn').onclick = () => document.getElementById('bgFile').click();
   document.getElementById('bgFile').onchange = onPickBg;
+  elFontBtn.onclick = () => elFontFile.click();
+  elFontFile.onchange = onPickFont;
 
   // fixed IDs
   elSheetId.value = FIXED_SHEET_ID;
@@ -282,11 +295,15 @@ canvas{max-width:100%;max-height:100%}
     ctx.arcTo(x,y,x+w,y,r);
     ctx.closePath();
   }
+  function currentFontCSS(sizePx){
+    const fam = S.fontFamily ? '\"'+S.fontFamily+'\", system-ui' : 'system-ui';
+    return 'bold ' + sizePx + 'px ' + fam;
+  }
   function drawSlotText(ctx, slot, x, y, g){
     const t = (slot.text || elGlobalText.value || '').trim();
     if(!t) return;
     const size = slot.textSize || Number(elFontSize.value||86);
-    ctx.font = 'bold ' + size + 'px system-ui';
+    ctx.font = currentFontCSS(size);
     ctx.textAlign = slot.textAlign || elTextAlign.value;
     const vAlign = slot.textVAlign || elTextVAlign.value;
     ctx.textBaseline = (vAlign==='top'?'top':(vAlign==='bottom'?'bottom':'middle'));
@@ -299,6 +316,28 @@ canvas{max-width:100%;max-height:100%}
     }
     ctx.fillStyle = slot.textColor || elFontColor.value || '#fff';
     ctx.fillText(t, tx, ty);
+  }
+
+  // ======= Font Upload =======
+  async function onPickFont(e){
+    const f = e.target.files && e.target.files[0];
+    if(!f) return;
+    try{
+      const ab = await f.arrayBuffer();
+      const blob = new Blob([ab], {type: f.type || 'font/ttf'});
+      const url = URL.createObjectURL(blob);
+      const family = 'UserFont_' + Date.now();
+      const ff = new FontFace(family, 'url('+url+')');
+      await ff.load();
+      document.fonts.add(ff);
+      S.fontFamily = family;
+      elFontName.textContent = f.name;
+      URL.revokeObjectURL(url);
+      draw();
+    }catch(err){
+      console.error(err);
+      alert('フォントの読み込みに失敗しました。別のファイルをお試しください。');
+    }
   }
 
   // ======= Sheet Load =======

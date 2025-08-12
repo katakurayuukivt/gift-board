@@ -3,747 +3,693 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Gift Board Generator (Tailwind + DnD)</title>
+  <title>Gift Board Generator</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
   <style>
-    :root {
-      --bg: #0e1218;
-      --panel: #121722;
-      --card: #161b24;
-      --muted: #9aa5b1;
-      --accent: #60a5fa;
-    }
-    html, body { background: var(--bg); color: #e5e7eb; }
-    .shadow-soft { box-shadow: 0 6px 24px rgba(0,0,0,.35); }
-    .tw-card { background: var(--panel); border:1px solid #263044; border-radius:16px; }
-    .tw-btn { background: var(--accent); color:#0b1020; font-weight:700; }
-    .field { background:#0b0d11; border:1px solid #2a3140; border-radius:10px; padding:8px 10px; }
-    .chip  { background:#0f1623; border:1px solid #2f3a4f; border-radius:12px; padding:6px 10px; }
-    .muted { color: var(--muted); }
-    .sticky-preview { position: sticky; top: 0; z-index: 40; background: var(--bg); padding-top: 8px; }
-    .scrollbar::-webkit-scrollbar { height: 10px; width: 10px; }
-    .scrollbar::-webkit-scrollbar-thumb { background:#223048; border-radius:10px; }
-    .slot-card { min-width: 360px; max-width: 360px; }
-    .dot { width:10px; height:10px; border-radius:9999px; background: #334155; display:inline-block; }
-    .grid-cell {
-      background: rgba(255,255,255,.02);
-      border: 1px solid rgba(255,255,255,.06);
-      border-radius: 14px;
-    }
+    html,body{height:100%;}
+    /* hide default file inputs visually */
+    input[type="file"].file-hide{position:absolute;left:-9999px;}
+    .tile-frame{box-shadow:inset 0 0 0 2px rgba(255,255,255,.06), inset 0 0 24px rgba(0,0,0,.6);}
+    .scrollbar::-webkit-scrollbar{height:10px;width:10px}
+    .scrollbar::-webkit-scrollbar-thumb{background:#2b3446;border-radius:6px}
+    .scrollbar::-webkit-scrollbar-track{background:#0e1420}
   </style>
 </head>
-<body class="min-h-screen">
+<body class="bg-slate-900 text-slate-200">
+  <div class="max-w-[1400px] mx-auto p-4 space-y-4">
 
-  <!-- Header -->
-  <header class="px-4 py-3 border-b border-slate-800 sticky top-0 z-50 bg-[var(--bg)]">
-    <div class="max-w-7xl mx-auto flex flex-wrap items-end gap-3">
-      <div>
-        <div class="text-sm text-slate-400">Sheet ID（固定）</div>
-        <input id="sheetId" class="field w-72" value="15QtBjbdETvUNL64JF46MvTvkfXaZI_jAtTphKQH6Y5U">
+    <!-- Top controls -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 items-end">
+      <div class="lg:col-span-3">
+        <label class="block text-xs text-slate-400">Sheet ID</label>
+        <input id="sheetId" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" placeholder="スプレッドシートのID">
       </div>
-      <div>
-        <div class="text-sm text-slate-400">gid（固定）</div>
-        <input id="gid" class="field w-40" value="1487601753">
+      <div class="lg:col-span-2">
+        <label class="block text-xs text-slate-400">gid</label>
+        <input id="gid" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" placeholder="シートのgid">
       </div>
-      <div class="grow"></div>
-      <div>
-        <div class="text-sm text-slate-400">CORSプロキシ（任意 / 画像＆CSV）</div>
-        <input id="proxy" class="field w-[28rem]" placeholder="https://api.allorigins.win/raw?url=" value="https://api.allorigins.win/raw?url=">
+      <div class="lg:col-span-4">
+        <label class="block text-xs text-slate-400">（任意）CSV直リンク（ウェブに公開のCSV URL を貼付）</label>
+        <input id="csvUrl" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" placeholder="https://docs.google.com/spreadsheets/d/e/.../pub?gid=...&single=true&output=csv">
       </div>
-      <button id="loadBtn" class="tw-btn px-4 py-2 rounded-xl shadow-soft">読み込む</button>
-      <input id="bgFile" type="file" accept="image/*" class="hidden">
-      <button id="bgBtn" class="px-4 py-2 rounded-xl bg-slate-700 hover:bg-slate-600">背景画像を選ぶ</button>
-      <button id="saveBtn" class="tw-btn px-4 py-2 rounded-xl shadow-soft">PNGとして保存</button>
+      <div class="lg:col-span-3">
+        <label class="block text-xs text-slate-400">CORSプロキシURL（任意）</label>
+        <input id="proxy" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" placeholder="https://api.allorigins.win/raw?url=">
+      </div>
+
+      <div class="lg:col-span-2 flex gap-2">
+        <button id="loadBtn" class="px-4 py-2 rounded bg-sky-500 text-slate-900 font-bold">読み込む</button>
+        <label class="relative px-4 py-2 rounded bg-slate-700 cursor-pointer">
+          <input id="bgFile" type="file" accept="image/*" class="file-hide">
+          <span>背景画像を選ぶ</span>
+        </label>
+      </div>
+      <div class="lg:col-span-2 flex gap-2">
+        <label class="relative px-4 py-2 rounded bg-slate-700 cursor-pointer">
+          <input id="fontFile" type="file" accept=".ttf,.otf,.woff,.woff2" class="file-hide">
+          <span>フォントを追加</span>
+        </label>
+        <select id="fontSel" class="px-3 py-2 rounded bg-slate-800 border border-slate-700">
+          <option value="system-ui" selected>system-ui</option>
+        </select>
+      </div>
+      <div class="lg:col-span-2 flex gap-2">
+        <button id="saveBtn" class="px-4 py-2 rounded bg-emerald-400 text-slate-900 font-bold">PNGとして保存</button>
+      </div>
     </div>
-  </header>
 
-  <main class="max-w-7xl mx-auto p-4">
-    <!-- Controls + Preview -->
-    <section class="tw-card p-4 mb-4">
-      <div class="grid grid-cols-12 gap-4">
-        <div class="col-span-12 xl:col-span-8">
-          <div class="sticky-preview">
-            <div class="flex items-center justify-between mb-2">
-              <div class="font-bold">ライブプレビュー</div>
-              <div class="flex items-center gap-3">
-                <label class="chip flex items-center gap-2"><span class="muted text-sm">ズーム</span>
-                  <input id="zoom" type="range" min="50" max="200" value="100" class="w-40">
-                  <span id="zoomLabel" class="text-sm">100%</span>
-                </label>
-                <label class="chip flex items-center gap-2"><span class="muted text-sm">ガイド枠</span>
-                  <select id="guide" class="field py-1 text-sm">
-                    <option value="on" selected>ON</option>
-                    <option value="off">OFF</option>
-                  </select>
-                </label>
-              </div>
+    <!-- Core layout -->
+    <div class="grid grid-cols-1 xl:grid-cols-12 gap-4">
+      <!-- Live preview + knobs -->
+      <div class="xl:col-span-7 space-y-3">
+        <!-- knobs -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div><label class="text-xs text-slate-400">列(COLS)</label><input id="cols" type="number" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" value="6"></div>
+          <div><label class="text-xs text-slate-400">行(ROWS)</label><input id="rows" type="number" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" value="3"></div>
+          <div><label class="text-xs text-slate-400">枠幅 TILE_W</label><input id="tileW" type="number" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" value="320"></div>
+          <div><label class="text-xs text-slate-400">枠高 TILE_H</label><input id="tileH" type="number" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" value="180"></div>
+          <div><label class="text-xs text-slate-400">枠間 GAP</label><input id="gap" type="number" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" value="20"></div>
+          <div><label class="text-xs text-slate-400">角丸 px</label><input id="radius" type="number" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" value="18"></div>
+          <div><label class="text-xs text-slate-400">左上オフセットX</label><input id="offX" type="number" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" value="0"></div>
+          <div><label class="text-xs text-slate-400">左上オフセットY</label><input id="offY" type="number" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" value="0"></div>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <label class="text-xs text-slate-400">ズーム</label>
+          <input id="zoom" type="range" min="50" max="200" value="100" class="w-64">
+          <button id="refreshBtn" class="px-3 py-1 bg-slate-700 rounded">更新</button>
+          <label class="text-xs flex items-center gap-2"><input id="showTextPreview" type="checkbox" class="scale-125" /> プレビューでテキスト表示</label>
+        </div>
+
+        <!-- Live preview area -->
+        <div class="relative bg-slate-950 rounded-xl border border-slate-800 p-3">
+          <canvas id="preview" class="w-full h-auto block mx-auto"></canvas>
+          <div class="absolute right-2 top-2 text-xs text-slate-400" id="bgInfo"></div>
+        </div>
+
+        <p class="text-xs text-slate-400">※ 生成PNGにはガイドや枠・テキストは設定に応じて描画されます（デフォルト: テキストは出力のみ）。</p>
+      </div>
+
+      <!-- Right: gift list / picked list -->
+      <div class="xl:col-span-5 space-y-4">
+        <div class="bg-slate-800/40 border border-slate-700 rounded-xl p-3">
+          <div class="flex items-center justify-between mb-2">
+            <div class="font-bold">ギフト一覧（クリックで追加）</div>
+            <button id="clearBtn" class="text-xs px-2 py-1 bg-slate-700 rounded">クリア</button>
+          </div>
+          <div id="giftList" class="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-[420px] overflow-auto scrollbar"></div>
+          <div class="text-[11px] text-slate-400 mt-2">必要カラム：Gift ID / Gift Name / Gift Cost / Gift Image URL</div>
+        </div>
+
+        <div class="bg-slate-800/40 border border-slate-700 rounded-xl p-3">
+          <div class="flex items-center justify-between mb-2">
+            <div class="font-bold">配置中（ドラッグで並び替え・クリックで編集）</div>
+          </div>
+          <div id="pickedBar" class="flex gap-2 overflow-x-auto scrollbar min-h-[96px]"></div>
+        </div>
+
+        <div class="bg-slate-800/40 border border-slate-700 rounded-xl p-3 hidden" id="slotEditorWrap">
+          <div class="font-bold mb-2" id="slotEditorTitle">スロット編集</div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-xs text-slate-400">テキスト</label>
+              <input id="edText" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1" placeholder="スロットの見出し（任意）">
             </div>
-            <canvas id="preview" class="w-full rounded-xl border border-slate-800 shadow-soft bg-[var(--card)]"></canvas>
+            <div class="grid grid-cols-2 gap-2">
+              <div><label class="text-xs text-slate-400">文字サイズ(px)</label><input id="edTextSize" type="number" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1" value="86"></div>
+              <div><label class="text-xs text-slate-400">文字色</label><input id="edColor" type="color" class="w-full h-10 bg-slate-900 border border-slate-700 rounded" value="#ffffff"></div>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div><label class="text-xs text-slate-400">文字Xオフ</label><input id="edTextX" type="number" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1" value="0"></div>
+              <div><label class="text-xs text-slate-400">文字Yオフ</label><input id="edTextY" type="number" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1" value="0"></div>
+            </div>
+            <div class="grid grid-cols-3 gap-2 items-end">
+              <div><label class="text-xs text-slate-400">アイコン倍率(%)</label><input id="edIconScale" type="number" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1" value="100"></div>
+              <div><label class="text-xs text-slate-400">アイコンX</label><input id="edIconX" type="number" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1" value="0"></div>
+              <div><label class="text-xs text-slate-400">アイコンY</label><input id="edIconY" type="number" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1" value="0"></div>
+            </div>
+            <div class="col-span-2 grid grid-cols-4 gap-2 items-end">
+              <label class="relative px-3 py-2 rounded bg-slate-700 cursor-pointer text-center">
+                <input id="edOverlayFile" type="file" accept="image/*" class="file-hide">
+                <span>追加画像を選択</span>
+              </label>
+              <div><label class="text-xs text-slate-400">追加倍率(%)</label><input id="edOvScale" type="number" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1" value="100"></div>
+              <div><label class="text-xs text-slate-400">追加X</label><input id="edOvX" type="number" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1" value="0"></div>
+              <div><label class="text-xs text-slate-400">追加Y</label><input id="edOvY" type="number" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1" value="0"></div>
+            </div>
+            <div class="col-span-2 flex gap-2">
+              <label class="text-xs flex items-center gap-2"><input id="edTextPreview" type="checkbox" class="scale-125"> プレビューでテキスト表示</label>
+              <button id="edDelete" class="ml-auto px-3 py-2 bg-rose-500 text-slate-900 rounded">このスロットを削除</button>
+            </div>
           </div>
         </div>
 
-        <div class="col-span-12 xl:col-span-4 space-y-3">
-          <div class="font-bold">レイアウト設定</div>
-          <div class="grid grid-cols-2 gap-2">
-            <label class="text-sm muted">列 (COLS)<input id="cols" class="field w-full" type="number" value="6"></label>
-            <label class="text-sm muted">行 (ROWS)<input id="rows" class="field w-full" type="number" value="3"></label>
-            <label class="text-sm muted">枠幅 TILE_W<input id="tileW" class="field w-full" type="number" value="320"></label>
-            <label class="text-sm muted">枠高 TILE_H<input id="tileH" class="field w-full" type="number" value="180"></label>
-            <label class="text-sm muted">枠間 GAP<input id="gap" class="field w-full" type="number" value="20"></label>
-            <label class="text-sm muted">角丸 px<input id="radius" class="field w-full" type="number" value="18"></label>
-            <label class="text-sm muted">上オフセット X<input id="offX" class="field w-full" type="number" value="0"></label>
-            <label class="text-sm muted">上オフセット Y<input id="offY" class="field w-full" type="number" value="0"></label>
-            <label class="text-sm muted">アイコン余白 px<input id="pad" class="field w-full" type="number" value="14"></label>
-            <label class="text-sm muted">アイコン倍率 %<input id="iconScale" type="range" min="50" max="140" value="100" class="w-full"></label>
-          </div>
-
-          <div class="font-bold mt-4">テキスト（全体のデフォルト）</div>
-          <div class="grid grid-cols-2 gap-2">
-            <label class="text-sm muted col-span-2">内容<input id="globalText" class="field w-full" placeholder="例）テスト"></label>
-            <label class="text-sm muted">サイズ px<input id="globalTextSize" type="number" class="field w-full" value="86"></label>
-            <label class="text-sm muted">位置
-              <select id="globalTextPos" class="field w-full">
-                <option value="top-left">左上</option>
-                <option value="top">中央上</option>
-                <option value="top-right">右上</option>
-                <option value="left">中央左</option>
-                <option value="center" selected>中央</option>
-                <option value="right">中央右</option>
-                <option value="bottom-left">左下</option>
-                <option value="bottom">中央下</option>
-                <option value="bottom-right">右下</option>
-              </select>
-            </label>
-            <label class="text-sm muted">オフセットX<input id="globalTextDx" type="number" class="field w-full" value="0"></label>
-            <label class="text-sm muted">オフセットY<input id="globalTextDy" type="number" class="field w-full" value="0"></label>
-            <label class="text-sm muted">色<input id="globalColor" type="color" class="field w-full" value="#ffffff"></label>
-            <label class="text-sm muted">フチ（白）<input id="globalStroke" type="checkbox" checked class="ml-2"></label>
-          </div>
-
-          <div class="font-bold mt-4">フォント</div>
-          <div class="flex items-center gap-2">
-            <input id="fontFile" type="file" accept=".ttf,.otf,.woff,.woff2" class="hidden">
-            <button id="fontBtn" class="px-3 py-2 bg-slate-600 rounded-lg hover:bg-slate-500">フォントをアップロード</button>
-            <input id="fontFamily" class="field w-56" placeholder="フォント名（未指定なら system-ui）">
-          </div>
-
-          <div class="text-xs muted mt-3">
-            保存/復元（ブラウザ内）
-          </div>
-          <div class="flex items-center gap-2">
-            <button id="saveCfg" class="px-3 py-2 bg-slate-700 rounded-lg">保存</button>
-            <button id="loadCfg" class="px-3 py-2 bg-slate-700 rounded-lg">復元</button>
-            <button id="resetCfg" class="px-3 py-2 bg-slate-700 rounded-lg">初期化</button>
-          </div>
-        </div>
       </div>
-    </section>
+    </div>
 
-    <!-- Gifts and slots -->
-    <section class="grid grid-cols-12 gap-4">
-      <div class="col-span-12 xl:col-span-4 tw-card p-4">
-        <div class="flex items-center justify-between mb-2">
-          <div class="font-bold">ギフト一覧（クリックで追加）</div>
-          <button id="clearBtn" class="px-3 py-1.5 bg-slate-700 rounded-lg">クリア</button>
-        </div>
-        <div id="giftList" class="grid grid-cols-2 gap-2 max-h-[70vh] overflow-auto pr-1"></div>
-        <div class="text-xs muted mt-2">※ 必要カラム：<b>Gift ID / Gift Name / Gift Cost / Gift Image URL</b></div>
-      </div>
-
-      <div class="col-span-12 xl:col-span-8 tw-card p-4">
-        <div class="font-bold mb-2">配置中（ドラッグで並べ替え / 最大 任意の行×列）</div>
-        <div id="slotRow" class="flex gap-3 overflow-x-auto scrollbar pb-2"></div>
-      </div>
-    </section>
-  </main>
+    <canvas id="exportCanvas" class="hidden"></canvas>
+  </div>
 
 <script>
 (() => {
-  // ---------- Constants ----------
-  const DEFAULT_SHEET = '15QtBjbdETvUNL64JF46MvTvkfXaZI_jAtTphKQH6Y5U';
-  const DEFAULT_GID   = '1487601753';
-  const CANVAS_WIDTH  = 1080; // always scale preview/export to 1080 width
+  // ====== constants & state ======
+  const DEFAULT_SHEET = "15QtBjbdETvUNL64JF46MvTvkfXaZI_jAtTphKQH6Y5U";
+  const DEFAULT_GID   = "1487601753";
+  const DEFAULT_PROXY = "https://api.allorigins.win/raw?url="; // デフォ。失敗時は他にフォールバック
+  const PREVIEW_BASE_W = 1080; // 1080幅に収まるようスケール
 
-  // ---------- State ----------
-  let gifts = [];            // all gifts from sheet
-  let picked = [];           // placed gifts (slots)
-  let bgImg = null;          // background image (HTMLImageElement)
-  let fontLoadedName = '';   // custom font family name (from upload)
-  let layout = {
-    cols: 6, rows: 3, tileW: 320, tileH: 180, gap: 20, radius: 18,
-    offX: 0, offY: 0, pad: 14, iconScale: 100,
-    guide: 'on'
-  };
-  let globalText = {
-    text: '', size: 86, pos: 'center', dx: 0, dy: 0,
-    color: '#ffffff', stroke: true
-  };
+  const imageCache = new Map(); // url -> Promise<ImageBitmap>
+  let gifts = [];               // マスター一覧
+  let picked = [];              // {gift, text, textSize, color, textX, textY, iconScale, iconX, iconY, overlay:{blobUrl,scale,x,y}, showTextPreview}
+  let bgImg = null;             // ImageBitmap
+  let userFont = null;          // {name, url}
 
-  // ---------- DOM ----------
+  // ====== DOM ======
   const el = (id) => document.getElementById(id);
-  const sheetId  = el('sheetId');
-  const gid      = el('gid');
-  const proxy    = el('proxy');
-  const preview  = el('preview');
-  const ctx      = preview.getContext('2d');
-  const giftList = el('giftList');
-  const slotRow  = el('slotRow');
-  const zoom     = el('zoom');
-  const zoomLabel= el('zoomLabel');
+  const sheetId = el('sheetId'), gid = el('gid'), csvUrl = el('csvUrl'), proxy = el('proxy');
+  const cols = el('cols'), rows = el('rows'), tileW = el('tileW'), tileH = el('tileH'), gap = el('gap'), radius = el('radius'), offX = el('offX'), offY = el('offY');
+  const preview = el('preview'), exportCanvas = el('exportCanvas');
+  const zoom = el('zoom'), refreshBtn = el('refreshBtn'), showTextPreview = el('showTextPreview');
+  const bgInfo = el('bgInfo'), pickedBar = el('pickedBar'), giftList = el('giftList');
+  const slotEditorWrap = el('slotEditorWrap'); const slotEditorTitle = el('slotEditorTitle');
+  const ed = {
+    text: el('edText'), textSize: el('edTextSize'), color: el('edColor'), textX: el('edTextX'), textY: el('edTextY'),
+    iconScale: el('edIconScale'), iconX: el('edIconX'), iconY: el('edIconY'),
+    ovFile: el('edOverlayFile'), ovScale: el('edOvScale'), ovX: el('edOvX'), ovY: el('edOvY'),
+    textPreview: el('edTextPreview'), del: el('edDelete')
+  };
+  let editingIndex = -1;
 
-  // Inputs
-  const cols = el('cols'), rows = el('rows'), tileW = el('tileW'), tileH = el('tileH'),
-        gap = el('gap'), radius = el('radius'), offX = el('offX'), offY = el('offY'),
-        pad = el('pad'), iconScale = el('iconScale'), guide = el('guide');
+  // defaults
+  sheetId.value = DEFAULT_SHEET;
+  gid.value = DEFAULT_GID;
+  proxy.value = DEFAULT_PROXY;
 
-  const globalTextEl = el('globalText'), globalTextSize = el('globalTextSize'),
-        globalTextPos = el('globalTextPos'), globalTextDx = el('globalTextDx'),
-        globalTextDy = el('globalTextDy'), globalColor = el('globalColor'),
-        globalStroke = el('globalStroke');
-
-  // ---------- Helpers ----------
-  function saveLocal() {
-    const data = { layout, globalText, picked, sheet: sheetId.value, gid: gid.value };
-    localStorage.setItem('giftboard_v3', JSON.stringify(data));
-  }
-  function loadLocal() {
-    const s = localStorage.getItem('giftboard_v3');
-    if(!s) return;
-    try {
-      const data = JSON.parse(s);
-      if(data.layout) layout = Object.assign(layout, data.layout);
-      if(data.globalText) globalText = Object.assign(globalText, data.globalText);
-      if(Array.isArray(data.picked)) picked = data.picked;
-      sheetId.value = data.sheet || DEFAULT_SHEET;
-      gid.value = data.gid || DEFAULT_GID;
-    }catch{}
-  }
-
-  function applyToInputs(){
-    cols.value = layout.cols; rows.value = layout.rows;
-    tileW.value = layout.tileW; tileH.value = layout.tileH;
-    gap.value = layout.gap; radius.value = layout.radius;
-    offX.value = layout.offX; offY.value = layout.offY;
-    pad.value = layout.pad; iconScale.value = layout.iconScale;
-    guide.value = layout.guide;
-
-    globalTextEl.value = globalText.text;
-    globalTextSize.value = globalText.size;
-    globalTextPos.value = globalText.pos;
-    globalTextDx.value = globalText.dx;
-    globalTextDy.value = globalText.dy;
-    globalColor.value = globalText.color;
-    globalStroke.checked = !!globalText.stroke;
-  }
-
-  function updateFromInputs(){
-    layout.cols = parseInt(cols.value||6);
-    layout.rows = parseInt(rows.value||3);
-    layout.tileW = parseInt(tileW.value||320);
-    layout.tileH = parseInt(tileH.value||180);
-    layout.gap = parseInt(gap.value||20);
-    layout.radius = parseInt(radius.value||18);
-    layout.offX = parseInt(offX.value||0);
-    layout.offY = parseInt(offY.value||0);
-    layout.pad = parseInt(pad.value||14);
-    layout.iconScale = parseInt(iconScale.value||100);
-    layout.guide = guide.value;
-
-    globalText.text = globalTextEl.value || '';
-    globalText.size = parseInt(globalTextSize.value||86);
-    globalText.pos  = globalTextPos.value;
-    globalText.dx   = parseInt(globalTextDx.value||0);
-    globalText.dy   = parseInt(globalTextDy.value||0);
-    globalText.color= globalColor.value || '#ffffff';
-    globalText.stroke = !!globalStroke.checked;
-  }
-
-  function csvToRows(text){
+  // ====== utils ======
+  // robust CSV parser (no regex, ignores BOM/zero-width chars)
+  function csvToRows(csvText){
     const rows=[]; let i=0, cell='', row=[], inQ=false;
-    while(i<text.length){
-      const ch = text[i];
+    while(i<csvText.length){
+      const ch = csvText[i];
       if(inQ){
-        if(ch === '"'){ if(text[i+1] === '"'){ cell+='"'; i+=2; } else { inQ=false; i++; } }
-        else { cell+=ch; i++; }
-      }else{
-        if(ch === '"'){ inQ=true; i++; }
-        else if(ch === ','){ row.push(cell); cell=''; i++; }
-        else if(ch === '\n'){ row.push(cell); rows.push(row); cell=''; row=[]; i++; }
-        else if(ch === '\r'){ i++; }
-        else { cell+=ch; i++; }
+        if(ch === '"'){
+          if(csvText[i+1] === '"'){ cell+='"'; i+=2; }
+          else { inQ=false; i++; }
+        }else{ cell+=ch; i++; }
+        continue;
       }
+      if(ch === '"'){ inQ=true; i++; continue; }
+      if(ch === ','){ row.push(cell); cell=''; i++; continue; }
+      if(ch === '\\n'){ row.push(cell); rows.push(row); cell=''; row=[]; i++; continue; }
+      if(ch === '\\r'){ i++; continue; }
+      const code = ch.charCodeAt(0);
+      if(code===0xFEFF || code===0x200B || code===0x200C || code===0x200D){ i++; continue; }
+      cell += ch; i++;
     }
     row.push(cell); rows.push(row);
     return rows;
   }
-  function extractHyperlinkUrl(s){
-    const str = String(s||'').trim();
-    const m = str.match(/=HYPERLINK\(\s*"([^"]+)"/i);
-    return m ? m[1] : str;
-  }
 
-  function candidateCsvUrls(base){
-    const arr = [];
-    const user = (proxy?.value||'').trim();
-    if(user) arr.push(user + encodeURIComponent(base));
-    // thingproxy
-    arr.push('https://thingproxy.freeboard.io/fetch/' + base);
-    // r.jina.ai
-    arr.push('https://r.jina.ai/http/' + base.replace(/^https?:\/\//,'') );
-    // direct
-    arr.push(base);
-    return arr;
-  }
-  async function fetchTextWithFallback(urls){
-    for(const u of urls){
-      try{
-        const res = await fetch(u, { cache:'no-store' });
-        if(!res.ok) continue;
-        const t = await res.text();
-        if(t && t.length) return t;
-      }catch(e){}
+  // peel =HYPERLINK("URL","text")
+  function peelHyperlinkCell(s){
+    if(!s) return '';
+    s = String(s).trim();
+    const up = s.toUpperCase();
+    if(!up.startsWith('=HYPERLINK(')) return s;
+    let i = s.indexOf('(');
+    if(i<0) return s; i++;
+    if(s[i] !== '"') return s; i++;
+    let url='';
+    while(i < s.length){
+      const ch = s[i];
+      if(ch === '"'){
+        if(s[i+1] === '"'){ url+='"'; i+=2; continue; }
+        break;
+      }
+      url += ch; i++;
     }
-    throw new Error('fetchTextWithFallback failed');
+    return url;
   }
 
-  function candidateImageUrls(raw){
-    const arr = [];
-    const user = (proxy?.value||'').trim();
-    if(user) arr.push(user + encodeURIComponent(raw));
-    try{
-      const u = new URL(raw);
-      arr.push('https://images.weserv.nl/?url=' + u.host + u.pathname + u.search);
-    }catch{}
-    arr.push('https://thingproxy.freeboard.io/fetch/' + raw);
-    arr.push(raw);
-    return arr;
-  }
-  async function fetchImageBlob(rawUrl){
-    const cand = candidateImageUrls(rawUrl);
-    for(const url of cand){
+  async function fetchTextWithProxies(url, userProxy){
+    const cands = [];
+    if(userProxy) cands.push(userProxy + encodeURIComponent(url));
+    cands.push(url); // try direct
+    // fallbacks
+    cands.push('https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url));
+    cands.push('https://cors.isomorphic-git.org/' + url);
+
+    for(const u of cands){
       try{
-        const res = await fetch(url, { cache:'no-store' });
-        if(!res.ok) continue;
-        const b = await res.blob();
-        if((b.type||'').startsWith('image/')) return b;
-      }catch(e){}
+        const r = await fetch(u, {cache:'no-store'});
+        if(!r.ok) continue;
+        return await r.text();
+      }catch(e){ /* next */ }
     }
-    throw new Error('image fetch failed for '+rawUrl);
+    throw new Error('fetch failed');
   }
 
-  function drawRoundRect(c,x,y,w,h,r){
-    c.beginPath();
-    c.moveTo(x+r,y);
-    c.arcTo(x+w,y,x+w,y+h,r);
-    c.arcTo(x+w,y+h,x,y+h,r);
-    c.arcTo(x,y+h,x,y,r);
-    c.arcTo(x,y,x+w,y,r);
-    c.closePath();
+  async function loadSheet(sheetId, gid){
+    let url = '';
+    if(csvUrl.value.trim()){
+      url = csvUrl.value.trim();
+    }else{
+      url = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
+    }
+    const text = await fetchTextWithProxies(url, proxy.value.trim());
+    const rows = csvToRows(text);
+    if(!rows.length) return [];
+    const header = rows[0].map(h => h.trim());
+    const map = Object.fromEntries(header.map((h,i)=>[h,i]));
+    const need = ['Gift ID','Gift Name','Gift Cost','Gift Image URL'].every(k => k in map);
+    if(!need) throw new Error('ヘッダが不足しています');
+    return rows.slice(1).map(r => ({
+      id: r[map['Gift ID']] || '',
+      name: r[map['Gift Name']] || '',
+      cost: Number(r[map['Gift Cost']] || 0),
+      imageUrl: peelHyperlinkCell(r[map['Gift Image URL']] || '')
+    })).filter(g => g.id && g.name && g.imageUrl);
   }
 
-  function measureGrid(){
-    const {cols, rows, tileW, tileH, gap} = layout;
-    const gridW = cols*tileW + (cols+1)*gap;
-    const gridH = rows*tileH + (rows+1)*gap;
-    return {gridW, gridH};
+  async function fetchImageBitmap(url, userProxy){
+    if(imageCache.has(url)) return imageCache.get(url);
+    const p = (async () => {
+      const cands = [];
+      if(userProxy) cands.push(userProxy + encodeURIComponent(url));
+      try{
+        const u = new URL(url);
+        const path = u.host + u.pathname + (u.search||'');
+        cands.push('https://images.weserv.nl/?url=' + encodeURIComponent(path));
+      }catch{}
+      cands.push('https://cors.isomorphic-git.org/' + url);
+      cands.push(url);
+      for(const u of cands){
+        try{
+          const r = await fetch(u, {cache:'no-store'});
+          if(!r.ok) continue;
+          const b = await r.blob();
+          if(!(b.type||'').startsWith('image/')) continue;
+          return await createImageBitmap(b);
+        }catch(e){ /* next */ }
+      }
+      throw new Error('画像取得失敗: '+url);
+    })();
+    imageCache.set(url, p);
+    return p;
   }
 
-  function posFromAnchor(ax, ay, w, h, sizeW, sizeH){
-    let x=0,y=0;
-    if(ax==='left') x = w*0.0; else if(ax==='center') x = w*0.5; else x = w*1.0;
-    if(ay==='top')  y = h*0.0; else if(ay==='center') y = h*0.5; else y = h*1.0;
-    return {x, y};
+  function px(n){ return Number(n||0) || 0; }
+
+  // rounded rect path
+  function rrect(ctx, x,y,w,h,r){
+    r = Math.min(r, w/2, h/2);
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.arcTo(x+w,y,x+w,y+h,r);
+    ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r);
+    ctx.arcTo(x,y,x+w,y,r);
+    ctx.closePath();
   }
 
-  function anchorToXY(pos){
-    const map = {
-      'top-left':['left','top'], 'top':['center','top'], 'top-right':['right','top'],
-      'left':['left','center'], 'center':['center','center'], 'right':['right','center'],
-      'bottom-left':['left','bottom'], 'bottom':['center','bottom'], 'bottom-right':['right','bottom']
-    };
-    return map[pos]||['center','center'];
+  function gridSize(){
+    const W = px(cols.value)*px(tileW.value) + (px(cols.value)+1)*px(gap.value);
+    const H = px(rows.value)*px(tileH.value) + (px(rows.value)+1)*px(gap.value);
+    return {W,H};
   }
 
-  // ---------- UI rendering ----------
+  function drawGuide(ctx, x0, y0){
+    const COLS = px(cols.value), ROWS = px(rows.value);
+    const TW = px(tileW.value), TH = px(tileH.value), GAP = px(gap.value), R = px(radius.value);
+    ctx.save();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = "rgba(255,255,255,.08)";
+    for(let r=0;r<ROWS;r++){
+      for(let c=0;c<COLS;c++){
+        const x = x0 + GAP + c*(TW+GAP);
+        const y = y0 + GAP + r*(TH+GAP);
+        rrect(ctx,x,y,TW,TH,R);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+
+  async function render(toExport=false){
+    const ctx = preview.getContext('2d');
+    const {W,H} = gridSize();
+    // preview size scaled to 1080 width
+    const scale = PREVIEW_BASE_W / W;
+    const viewW = Math.round(W * scale * (px(zoom.value)/100));
+    const viewH = Math.round(H * scale * (px(zoom.value)/100));
+    preview.width = viewW;
+    preview.height = viewH;
+
+    // internal canvas for drawing at native grid size, then scale -> preview
+    const buf = document.createElement('canvas');
+    buf.width = W; buf.height = H;
+    const bctx = buf.getContext('2d');
+    bctx.fillStyle = '#0b1320';
+    bctx.fillRect(0,0,W,H);
+
+    // background (only in preview)
+    if(bgImg){
+      bctx.drawImage(bgImg, 0, 0, W, H);
+    }
+
+    // guide
+    drawGuide(bctx, px(offX.value), px(offY.value));
+
+    // draw items
+    const COLS = px(cols.value), TW = px(tileW.value), TH = px(tileH.value), GAP = px(gap.value), R = px(radius.value);
+
+    for(let i=0;i<Math.min(picked.length, COLS*px(rows.value)); i++){
+      const r = Math.floor(i/COLS), c = i%COLS;
+      const x = px(offX.value) + GAP + c*(TW+GAP);
+      const y = px(offY.value) + GAP + r*(TH+GAP);
+
+      const it = picked[i];
+      if(!it) continue;
+
+      // base icon
+      try{
+        const bmp = await fetchImageBitmap(it.gift.imageUrl, proxy.value.trim());
+        const scalePct = (Number(it.iconScale)||100)/100;
+        // fit keeping aspect: max area inside tile minus padding 16
+        const maxW = TW - 16, maxH = TH - 16;
+        const ratio = Math.min(maxW/bmp.width, maxH/bmp.height) * scalePct;
+        const iw = bmp.width * ratio, ih = bmp.height * ratio;
+        const ix = x + (TW - iw)/2 + px(it.iconX);
+        const iy = y + (TH - ih)/2 + px(it.iconY);
+        bctx.drawImage(bmp, ix, iy, iw, ih);
+      }catch(e){ /* ignore */ }
+
+      // overlay
+      if(it.overlay && it.overlay.url){
+        try{
+          const img = await (async () => {
+            if(imageCache.has(it.overlay.url)) return imageCache.get(it.overlay.url);
+            const p = createImageBitmap(await (await fetch(it.overlay.url)).blob());
+            imageCache.set(it.overlay.url, p);
+            return p;
+          })();
+          const sc = (Number(it.overlay.scale)||100)/100;
+          const iw = img.width * sc, ih = img.height * sc;
+          const ix = x + (TW - iw)/2 + px(it.overlay.x);
+          const iy = y + (TH - ih)/2 + px(it.overlay.y);
+          bctx.drawImage(img, ix, iy, iw, ih);
+        }catch(e){ /* ignore */ }
+      }
+
+      // text (preview optional)
+      if( (toExport || showTextPreview.checked || it.showTextPreview) && it.text ){
+        bctx.save();
+        bctx.fillStyle = it.color || '#ffffff';
+        bctx.strokeStyle = 'rgba(0,0,0,.9)';
+        bctx.lineWidth = Math.max(2, Math.floor((Number(it.textSize)||86)/16));
+        bctx.font = `900 ${Math.max(12, Number(it.textSize)||86)}px ${userFont ? userFont.name : 'system-ui'}`;
+        bctx.textAlign = 'center';
+        bctx.textBaseline = 'middle';
+        const tx = x + TW/2 + px(it.textX);
+        const ty = y + TH/2 + px(it.textY);
+        bctx.strokeText(it.text, tx, ty);
+        bctx.fillText(it.text, tx, ty);
+        bctx.restore();
+      }
+    }
+
+    // blit to preview
+    ctx.imageSmoothingEnabled = true;
+    ctx.clearRect(0,0,preview.width,preview.height);
+    ctx.drawImage(buf, 0, 0, preview.width, preview.height);
+  }
+
   function renderGiftList(){
     giftList.innerHTML = '';
     for(const g of gifts){
-      const btn = document.createElement('button');
-      btn.className = 'chip text-left hover:bg-slate-700 transition-colors';
-      btn.innerHTML = \`
-        <div class="font-bold text-slate-100">\${escapeHtml(g.name)}</div>
-        <div class="muted text-xs">🪙 \${g.cost}</div>\`;
-      btn.onclick = () => {
+      const b = document.createElement('button');
+      b.className = 'bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg px-3 py-2 text-left';
+      b.innerHTML = `<div class="font-bold truncate">${escapeHtml(g.name)}</div>
+                     <div class="text-xs text-slate-400">🪙 ${g.cost}</div>`;
+      b.onclick = () => {
         picked.push({
-          id: g.id, name: g.name, cost: g.cost, imageUrl: g.imageUrl,
-          // per-slot adjustments
-          scale: 100, dx: 0, dy: 0,
-          text: '', textSize: globalText.size, textPos: globalText.pos, textDx: 0, textDy: 0,
-          textColor: globalText.color, textStroke: globalText.stroke,
-          extraUrl: '', extraBlobUrl: '', extraScale: 100, extraDx: 0, extraDy: 0
+          gift:g, text:'', textSize:86, color:'#ffffff', textX:0, textY:0,
+          iconScale:100, iconX:0, iconY:0,
+          overlay:{url:'',scale:100,x:0,y:0},
+          showTextPreview:false
         });
-        renderSlots(); draw();
+        renderPickedBar();
+        render();
       };
-      giftList.appendChild(btn);
+      giftList.appendChild(b);
     }
   }
 
-  function slotCardTemplate(g, idx){
-    return \`
-    <div class="slot-card tw-card p-3 flex flex-col gap-2" data-idx="\${idx}">
-      <div class="flex items-center justify-between mb-1">
-        <div class="text-slate-300 text-sm">スロット \${idx+1}</div>
-        <button class="text-rose-400 hover:text-rose-300 text-sm" data-act="del">削除</button>
-      </div>
-      <div class="font-bold">\${escapeHtml(g.name)} <span class="muted">/ 🪙\${g.cost}</span></div>
+  function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
 
-      <label class="text-xs muted">スロットのテキスト
-        <input data-bind="text" class="field w-full" placeholder="任意" value="\${escapeAttr(g.text)}">
-      </label>
-
-      <div class="grid grid-cols-3 gap-2">
-        <label class="text-xs muted">アイコン倍率%
-          <input data-bind="scale" type="number" class="field w-full" value="\${g.scale}" />
-        </label>
-        <label class="text-xs muted">アイコンX
-          <input data-bind="dx" type="number" class="field w-full" value="\${g.dx}" />
-        </label>
-        <label class="text-xs muted">アイコンY
-          <input data-bind="dy" type="number" class="field w-full" value="\${g.dy}" />
-        </label>
-      </div>
-
-      <div class="text-xs muted">追加画像</div>
-      <div class="flex items-center gap-2">
-        <input type="file" data-act="extraFile" accept="image/*" class="hidden">
-        <button class="px-3 py-2 bg-slate-600 rounded-lg hover:bg-slate-500" data-act="extraBtn">ファイルを選択</button>
-        <span class="muted text-xs flex-1 truncate">\${g.extraUrl ? g.extraUrl.split('/').pop() : '選択されていません'}</span>
-      </div>
-      <div class="grid grid-cols-3 gap-2">
-        <label class="text-xs muted">追画像X
-          <input data-bind="extraDx" type="number" class="field w-full" value="\${g.extraDx}" />
-        </label>
-        <label class="text-xs muted">追画像Y
-          <input data-bind="extraDy" type="number" class="field w-full" value="\${g.extraDy}" />
-        </label>
-        <label class="text-xs muted">倍率%
-          <input data-bind="extraScale" type="number" class="field w-full" value="\${g.extraScale}" />
-        </label>
-      </div>
-
-      <div class="grid grid-cols-3 gap-2">
-        <label class="text-xs muted">文字サイズ
-          <input data-bind="textSize" type="number" class="field w-full" value="\${g.textSize}" />
-        </label>
-        <label class="text-xs muted">文字X
-          <input data-bind="textDx" type="number" class="field w-full" value="\${g.textDx}" />
-        </label>
-        <label class="text-xs muted">文字Y
-          <input data-bind="textDy" type="number" class="field w-full" value="\${g.textDy}" />
-        </label>
-      </div>
-
-      <div class="grid grid-cols-2 gap-2">
-        <label class="text-xs muted">文字位置
-          <select data-bind="textPos" class="field w-full">
-            \${['top-left','top','top-right','left','center','right','bottom-left','bottom','bottom-right']
-               .map(v => \`<option value="\${v}" \${g.textPos===v?'selected':''}>\${v}</option>\`).join('')}
-          </select>
-        </label>
-        <label class="text-xs muted">色
-          <input data-bind="textColor" type="color" class="field w-full" value="\${g.textColor}" />
-        </label>
-      </div>
-      <label class="text-xs muted flex items-center gap-2">
-        <input data-bind="textStroke" type="checkbox" \${g.textStroke?'checked':''}> テキストを白フチ
-      </label>
-    </div>\`;
+  function renderPickedBar(){
+    pickedBar.innerHTML='';
+    picked.forEach((it, idx) => {
+      const d = document.createElement('div');
+      d.className = 'min-w-[96px] max-w-[120px] flex-shrink-0 rounded-lg bg-slate-800/60 border border-slate-700 p-2 cursor-pointer';
+      d.innerHTML = `<div class="text-[10px] text-slate-400 mb-1">#${idx+1}</div>
+                     <div class="font-bold text-sm truncate">${escapeHtml(it.gift.name)}</div>`;
+      d.onclick = () => openEditor(idx);
+      pickedBar.appendChild(d);
+    });
+    // sortable
+    Sortable.create(pickedBar, {
+      animation: 150,
+      onEnd: (evt) => {
+        const [moved] = picked.splice(evt.oldIndex,1);
+        picked.splice(evt.newIndex,0,moved);
+        renderPickedBar();
+        render();
+      }
+    });
   }
 
-  function bindSlotCardEvents(card, idx){
-    card.addEventListener('input', (e)=>{
-      const t = e.target;
-      const bind = t.getAttribute('data-bind');
-      if(!bind) return;
-      let v = t.type==='checkbox' ? t.checked : t.value;
-      // number cast
-      if(['scale','dx','dy','extraDx','extraDy','extraScale','textSize','textDx','textDy'].includes(bind)) v = parseInt(v||0);
-      picked[idx][bind] = v;
-      draw(); saveLocal();
-    });
-    card.querySelector('[data-act="del"]').onclick = ()=>{
-      picked.splice(idx,1); renderSlots(); draw(); saveLocal();
+  function openEditor(i){
+    editingIndex = i;
+    const it = picked[i];
+    slotEditorWrap.classList.remove('hidden');
+    slotEditorTitle.textContent = `スロット編集 #${i+1}（${it.gift.name}）`;
+    ed.text.value = it.text||'';
+    ed.textSize.value = it.textSize||86;
+    ed.color.value = it.color||'#ffffff';
+    ed.textX.value = it.textX||0;
+    ed.textY.value = it.textY||0;
+    ed.iconScale.value = it.iconScale||100;
+    ed.iconX.value = it.iconX||0;
+    ed.iconY.value = it.iconY||0;
+    ed.ovScale.value = (it.overlay&&it.overlay.scale)||100;
+    ed.ovX.value = (it.overlay&&it.overlay.x)||0;
+    ed.ovY.value = (it.overlay&&it.overlay.y)||0;
+    ed.textPreview.checked = !!it.showTextPreview;
+  }
+
+  function bindEditor(){
+    const upd = () => {
+      if(editingIndex<0) return;
+      const it = picked[editingIndex];
+      it.text = ed.text.value;
+      it.textSize = px(ed.textSize.value);
+      it.color = ed.color.value || '#ffffff';
+      it.textX = px(ed.textX.value);
+      it.textY = px(ed.textY.value);
+      it.iconScale = px(ed.iconScale.value);
+      it.iconX = px(ed.iconX.value);
+      it.iconY = px(ed.iconY.value);
+      it.overlay = it.overlay || {};
+      it.overlay.scale = px(ed.ovScale.value);
+      it.overlay.x = px(ed.ovX.value);
+      it.overlay.y = px(ed.ovY.value);
+      it.showTextPreview = !!ed.textPreview.checked;
+      render();
     };
-    const fileInput = card.querySelector('[data-act="extraFile"]');
-    card.querySelector('[data-act="extraBtn"]').onclick = ()=> fileInput.click();
-    fileInput.onchange = (ev)=>{
-      const f = ev.target.files?.[0];
+    ['input','change'].forEach(ev => {
+      ed.text.addEventListener(ev, upd);
+      ed.textSize.addEventListener(ev, upd);
+      ed.color.addEventListener(ev, upd);
+      ed.textX.addEventListener(ev, upd);
+      ed.textY.addEventListener(ev, upd);
+      ed.iconScale.addEventListener(ev, upd);
+      ed.iconX.addEventListener(ev, upd);
+      ed.iconY.addEventListener(ev, upd);
+      ed.ovScale.addEventListener(ev, upd);
+      ed.ovX.addEventListener(ev, upd);
+      ed.ovY.addEventListener(ev, upd);
+      ed.textPreview.addEventListener(ev, upd);
+    });
+    ed.ovFile.addEventListener('change', async (e) => {
+      if(editingIndex<0) return;
+      const f = e.target.files && e.target.files[0];
       if(!f) return;
       const url = URL.createObjectURL(f);
-      picked[idx].extraUrl = f.name;
-      picked[idx].extraBlobUrl = url;
-      renderSlots(); draw(); saveLocal();
-    };
-  }
-
-  function renderSlots(){
-    slotRow.innerHTML = '';
-    picked.forEach((g, idx)=>{
-      const wrap = document.createElement('div');
-      wrap.innerHTML = slotCardTemplate(g, idx);
-      const card = wrap.firstElementChild;
-      slotRow.appendChild(card);
-      bindSlotCardEvents(card, idx);
+      picked[editingIndex].overlay = picked[editingIndex].overlay || {};
+      picked[editingIndex].overlay.url = url;
+      render();
     });
-    // Sortable (drag to reorder cards)
-    Sortable.create(slotRow, {
-      animation: 180,
-      ghostClass: 'opacity-50',
-      onEnd: (evt)=>{
-        const {oldIndex, newIndex} = evt;
-        if(oldIndex===newIndex) return;
-        const moved = picked.splice(oldIndex,1)[0];
-        picked.splice(newIndex,0,moved);
-        renderSlots(); draw(); saveLocal();
-      }
+    ed.del.addEventListener('click', () => {
+      if(editingIndex<0) return;
+      picked.splice(editingIndex,1);
+      editingIndex=-1;
+      slotEditorWrap.classList.add('hidden');
+      renderPickedBar();
+      render();
     });
   }
 
-  function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
-  function escapeAttr(s){ return String(s||'').replace(/"/g,'&quot;'); }
-
-  // ---------- Sheet loading ----------
-  async function loadSheet(sheet, gid){
-    const base = \`https://docs.google.com/spreadsheets/d/\${sheet}/export?format=csv&gid=\${gid}\`;
-    const text = await fetchTextWithFallback(candidateCsvUrls(base));
-    const rows = csvToRows(text);
-    const header = rows[0].map(h=>h.trim());
-    const map = Object.fromEntries(header.map((h,i)=>[h,i]));
-    gifts = rows.slice(1).map(r => ({
-      id: (r[map['Gift ID']]||'').trim(),
-      name: (r[map['Gift Name']]||'').trim(),
-      cost: Number(r[map['Gift Cost']]||0),
-      imageUrl: extractHyperlinkUrl((r[map['Gift Image URL']]||'').trim())
-    })).filter(g => g.id && g.name && g.imageUrl);
-    renderGiftList();
-  }
-
-  // ---------- Images cache ----------
-  const imageCache = new Map(); // url -> ImageBitmap
-  async function getImageBitmap(url){
-    if(imageCache.has(url)) return imageCache.get(url);
-    const blob = await fetchImageBlob(url);
-    const bmp  = await createImageBitmap(blob);
-    imageCache.set(url, bmp);
-    return bmp;
-  }
-
-  // ---------- Font handling ----------
-  async function loadCustomFont(file){
-    const name = file.name.replace(/\.(ttf|otf|woff2?|TTF|OTF|WOFF2?)$/,'');
-    const url  = URL.createObjectURL(file);
-    try {
-      const face = new FontFace(name, \`url(\${url})\`);
-      await face.load();
-      (document as any).fonts?.add?.(face);
-      fontLoadedName = name;
-      el('fontFamily').value = name;
-    } catch(e){
-      console.error('font load failed', e);
-      alert('フォントの読み込みに失敗しました。TTF/OTF/WOFF をお試しください。');
-    }
-  }
-
-  // ---------- Preview & Export ----------
-  function ensureCanvasSize(){
-    const scale = CANVAS_WIDTH; // width
-    let bgW = scale, bgH = Math.round(scale * 9/16); // fallback 16:9
-    if(bgImg){
-      const ratio = CANVAS_WIDTH / bgImg.naturalWidth;
-      bgW = CANVAS_WIDTH;
-      bgH = Math.round(bgImg.naturalHeight * ratio);
-    }
-    preview.width = bgW;
-    preview.height= bgH;
-  }
-
-  function textXYInTile(tileRect, pos, dx, dy){
-    const [ax, ay] = anchorToXY(pos);
-    const {x,y} = posFromAnchor(ax, ay, tileRect.w, tileRect.h);
-    return { x: tileRect.x + x + dx, y: tileRect.y + y + dy };
-  }
-
-  async function draw(toExport=false){
-    ensureCanvasSize();
-    const {cols, rows, tileW, tileH, gap, radius, offX, offY, pad} = layout;
-    const {gridW, gridH} = measureGrid();
-    const c = ctx;
-    c.clearRect(0,0,preview.width, preview.height);
-    // background
-    if(bgImg){
-      const ratio = CANVAS_WIDTH / bgImg.naturalWidth;
-      const w = CANVAS_WIDTH;
-      const h = Math.round(bgImg.naturalHeight * ratio);
-      c.drawImage(bgImg, 0, 0, w, h);
-    } else {
-      // fallback bg
-      c.fillStyle = '#0f172a';
-      c.fillRect(0,0,preview.width, preview.height);
-    }
-
-    // offset to center grid
-    const originX = Math.floor((preview.width - gridW)/2) + offX;
-    const originY = Math.floor((preview.height - gridH)/2) + offY;
-
-    // guides
-    if(layout.guide==='on' && !toExport){
-      for(let r=0;r<rows;r++){
-        for(let cc=0;cc<cols;cc++){
-          const x = originX + gap + cc*(tileW+gap);
-          const y = originY + gap + r*(tileH+gap);
-          drawRoundRect(c,x,y,tileW,tileH,radius);
-          c.fillStyle = 'rgba(255,255,255,0.03)';
-          c.fill();
-          c.strokeStyle = 'rgba(255,255,255,0.06)';
-          c.lineWidth = 1;
-          c.stroke();
-        }
-      }
-    }
-
-    // draw picked tiles
-    for(let i=0;i<picked.length;i++){
-      const r = Math.floor(i/layout.cols);
-      const cc= i%layout.cols;
-      if(r>=rows) break;
-      const x = originX + gap + cc*(tileW+gap);
-      const y = originY + gap + r*(tileH+gap);
-      const rect = {x,y,w:tileW,h:tileH};
-
-      const g = picked[i];
-      // icon image
-      try{
-        const bmp = await getImageBitmap(g.imageUrl);
-        const maxW = tileW - pad*2;
-        const maxH = tileH - pad*2;
-        const ratio = Math.min(maxW/bmp.width, maxH/bmp.height) * ( (g.scale||100) / 100 ) * (layout.iconScale/100);
-        const iw = bmp.width * ratio;
-        const ih = bmp.height * ratio;
-        const ix = x + (tileW - iw)/2 + (g.dx||0);
-        const iy = y + (tileH - ih)/2 + (g.dy||0);
-        c.drawImage(bmp, ix, iy, iw, ih);
-      }catch(e){/* ignore */}
-
-      // extra overlay image
-      if(g.extraBlobUrl){
-        try{
-          const img = await createImageBitmap(await (await fetch(g.extraBlobUrl)).blob()).catch(()=>null);
-          if(img){
-            const maxW = tileW - pad*2;
-            const maxH = tileH - pad*2;
-            const ratio = Math.min(maxW/img.width, maxH/img.height) * ((g.extraScale||100)/100);
-            const iw = img.width * ratio;
-            const ih = img.height * ratio;
-            const ix = x + (tileW - iw)/2 + (g.extraDx||0);
-            const iy = y + (tileH - ih)/2 + (g.extraDy||0);
-            c.drawImage(img, ix, iy, iw, ih);
-          }
-        }catch(e){}
-      }
-
-      // text
-      const txt = g.text || globalText.text;
-      if(txt){
-        const size = g.text ? (g.textSize||globalText.size) : globalText.size;
-        const pos = g.text ? (g.textPos||globalText.pos) : globalText.pos;
-        const dx = g.text ? (g.textDx||0) : globalText.dx;
-        const dy = g.text ? (g.textDy||0) : globalText.dy;
-        const color = g.text ? (g.textColor||globalText.color) : globalText.color;
-        const stroke = g.text ? !!g.textStroke : !!globalText.stroke;
-
-        const {x:tx, y:ty} = textXYInTile(rect, pos, dx, dy);
-        const fam = (el('fontFamily').value || fontLoadedName || 'system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans JP", sans-serif');
-        c.font = \`bold \${size}px \${fam}\`;
-        c.textAlign = 'center';
-        c.textBaseline = 'middle';
-        if(stroke){ c.lineWidth = Math.max(2, Math.floor(size/10)); c.strokeStyle = '#000'; c.strokeText(txt, tx, ty); c.strokeStyle='#fff'; c.lineWidth/=2; c.strokeText(txt, tx, ty); }
-        c.fillStyle = color;
-        c.fillText(txt, tx, ty);
-      }
-    }
-
-    // zoom scale (CSS)
-    const scale = (parseInt(zoom.value||100)/100);
-    preview.style.transform = \`scale(\${scale})\`;
-    preview.style.transformOrigin = 'top left';
-    zoomLabel.textContent = \`\${Math.round(scale*100)}%\`;
-  }
-
-  function exportPng(){
-    draw(true).then(()=>{
-      try{
-        const url = preview.toDataURL('image/png');
-        const a = document.createElement('a');
-        a.href = url; a.download = 'gift_board.png'; a.click();
-      }catch(e){
-        alert('PNG出力に失敗しました。');
-      } finally {
-        draw(false);
-      }
-    });
-  }
-
-  // ---------- Events ----------
-  el('loadBtn').onclick = async ()=>{
+  // background
+  el('bgFile').addEventListener('change', async (e) => {
+    const f = e.target.files && e.target.files[0];
+    if(!f) return;
     try{
-      picked=[]; renderSlots(); draw();
-      await loadSheet(sheetId.value.trim(), gid.value.trim());
-    }catch(e){
-      console.error(e);
-      alert('シートの読み込みに失敗しました。権限とURL/CORSを確認してください。');
-    }
-  };
-  el('bgBtn').onclick = ()=> el('bgFile').click();
-  el('bgFile').onchange = (ev)=>{
-    const f = ev.target.files?.[0];
+      bgImg = await createImageBitmap(f);
+      bgInfo.textContent = `背景: ${bgImg.width}×${bgImg.height}`;
+    }catch{ bgImg = null; bgInfo.textContent = ''; }
+    render();
+  });
+
+  // font upload
+  const fontSel = el('fontSel');
+  el('fontFile').addEventListener('change', async (e) => {
+    const f = e.target.files && e.target.files[0];
     if(!f) return;
     const url = URL.createObjectURL(f);
-    const img = new Image();
-    img.onload = ()=>{ bgImg = img; draw(); URL.revokeObjectURL(url); };
-    img.src = url;
-  };
-  el('saveBtn').onclick = exportPng;
+    const fam = 'user-font-'+Date.now();
+    const face = new FontFace(fam, `url(${url})`);
+    await face.load();
+    (document as any).fonts ? document.fonts.add(face) : null;
+    const style = document.createElement('style');
+    style.textContent = `@font-face{ font-family:${fam}; src:url(${url}); font-display:swap; }`;
+    document.head.appendChild(style);
+    userFont = {name:fam, url};
+    // add option
+    const opt = document.createElement('option');
+    opt.value = fam; opt.textContent = f.name || fam;
+    fontSel.appendChild(opt);
+    fontSel.value = fam;
+    render();
+  });
 
-  // layout inputs
-  document.querySelectorAll('#cols,#rows,#tileW,#tileH,#gap,#radius,#offX,#offY,#pad,#iconScale,#guide,#globalText,#globalTextSize,#globalTextPos,#globalTextDx,#globalTextDy,#globalColor,#globalStroke')
-    .forEach(i => i.addEventListener('input', ()=>{ updateFromInputs(); draw(); saveLocal(); }));
+  fontSel.addEventListener('change', () => {
+    const v = fontSel.value;
+    if(v === 'system-ui'){ userFont = null; }
+    else { userFont = {name:v}; }
+    render();
+  });
 
-  zoom.oninput = ()=>{ zoomLabel.textContent = \`\${zoom.value}%\`; draw(); };
+  // load sheet
+  el('loadBtn').addEventListener('click', async () => {
+    try{
+      gifts = await loadSheet(sheetId.value.trim(), gid.value.trim());
+      renderGiftList();
+    }catch(e){
+      console.error(e);
+      alert('読み込みに失敗しました。シェア設定やURL/プロキシを確認してください。\\n公開CSVが使えると最も安定します。');
+    }
+  });
 
-  // font
-  el('fontBtn').onclick = ()=> el('fontFile').click();
-  el('fontFile').onchange = (e)=>{ const f = e.target.files?.[0]; if(f) loadCustomFont(f).then(draw); };
-  el('fontFamily').addEventListener('input', ()=> draw());
+  // render triggers
+  [cols,rows,tileW,tileH,gap,radius,offX,offY,zoom,refreshBtn,showTextPreview].forEach(elm => {
+    (elm.tagName==='BUTTON' ? elm : elm).addEventListener(elm.tagName==='BUTTON'?'click':'input', () => render());
+  });
 
-  // save/restore
-  el('saveCfg').onclick = ()=>{ saveLocal(); alert('保存しました'); };
-  el('loadCfg').onclick = ()=>{ loadLocal(); applyToInputs(); renderSlots(); draw(); };
-  el('resetCfg').onclick = ()=>{ localStorage.removeItem('giftboard_v3'); location.reload(); };
-  el('clearBtn').onclick = ()=>{ picked = []; renderSlots(); draw(); saveLocal(); };
+  // clear
+  el('clearBtn').addEventListener('click', () => {
+    picked = [];
+    renderPickedBar(); slotEditorWrap.classList.add('hidden'); editingIndex=-1; render();
+  });
 
-  // ---------- Bootstrap ----------
-  loadLocal();
-  applyToInputs();
-  // default sheet
-  if(!sheetId.value) sheetId.value = DEFAULT_SHEET;
-  if(!gid.value) gid.value = DEFAULT_GID;
+  // save PNG
+  el('saveBtn').addEventListener('click', async () => {
+    // export canvas size = background size if set, else 1080 width scaled to grid
+    const {W,H} = gridSize();
+    let expW = W, expH = H;
+    if(bgImg){ expW = bgImg.width; expH = bgImg.height; }
+    else {
+      expW = 1080;
+      expH = Math.round(1080 * (H/W));
+    }
+    exportCanvas.width = expW; exportCanvas.height = expH;
+    const ctx = exportCanvas.getContext('2d');
+    ctx.fillStyle='#0b1320'; ctx.fillRect(0,0,expW,expH);
+    // scale to grid
+    const s = expW / W;
+    ctx.save();
+    ctx.scale(s, s);
+    // background
+    if(bgImg){ ctx.drawImage(bgImg, 0,0, W,H); }
+    // draw guides? no (exportはガイド非表示)
+    // draw items (export mode forces text on)
+    const COLS = px(cols.value), TW = px(tileW.value), TH = px(tileH.value), GAP = px(gap.value);
+    for(let i=0;i<Math.min(picked.length, COLS*px(rows.value)); i++){
+      const r = Math.floor(i/COLS), c = i%COLS;
+      const x = px(offX.value) + GAP + c*(TW+GAP);
+      const y = px(offY.value) + GAP + r*(TH+GAP);
 
-  // initial draw with empty bg (auto size)
-  draw();
+      const it = picked[i];
+      if(!it) continue;
+      try{
+        const bmp = await fetchImageBitmap(it.gift.imageUrl, proxy.value.trim());
+        const scalePct = (Number(it.iconScale)||100)/100;
+        const maxW = TW - 16, maxH = TH - 16;
+        const ratio = Math.min(maxW/bmp.width, maxH/bmp.height) * scalePct;
+        const iw = bmp.width * ratio, ih = bmp.height * ratio;
+        const ix = x + (TW - iw)/2 + px(it.iconX);
+        const iy = y + (TH - ih)/2 + px(it.iconY);
+        ctx.drawImage(bmp, ix, iy, iw, ih);
+      }catch{}
 
-  // utility
-  function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]); }
+      if(it.overlay && it.overlay.url){
+        try{
+          const img = await (async () => {
+            if(imageCache.has(it.overlay.url)) return imageCache.get(it.overlay.url);
+            const p = createImageBitmap(await (await fetch(it.overlay.url)).blob());
+            imageCache.set(it.overlay.url, p);
+            return p;
+          })();
+          const sc = (Number(it.overlay.scale)||100)/100;
+          const iw = img.width * sc, ih = img.height * sc;
+          const ix = x + (TW - iw)/2 + px(it.overlay.x);
+          const iy = y + (TH - ih)/2 + px(it.overlay.y);
+          ctx.drawImage(img, ix, iy, iw, ih);
+        }catch{}
+      }
+
+      if(it.text){
+        ctx.save();
+        ctx.fillStyle = it.color || '#ffffff';
+        ctx.strokeStyle = 'rgba(0,0,0,.9)';
+        ctx.lineWidth = Math.max(2, Math.floor((Number(it.textSize)||86)/16));
+        ctx.font = `900 ${Math.max(12, Number(it.textSize)||86)}px ${userFont ? userFont.name : 'system-ui'}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const tx = x + TW/2 + px(it.textX);
+        const ty = y + TH/2 + px(it.textY);
+        ctx.strokeText(it.text, tx, ty);
+        ctx.fillText(it.text, tx, ty);
+        ctx.restore();
+      }
+    }
+    ctx.restore();
+
+    try{
+      const url = exportCanvas.toDataURL('image/png');
+      const a = document.createElement('a');
+      a.href = url; a.download = 'gift_board.png'; a.click();
+    }catch{
+      alert('PNG出力に失敗しました');
+    }
+  });
+
+  function init(){
+    bindEditor();
+    render();
+  }
+  init();
 })();
 </script>
 

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Gift Board Builder</title>
+<title>Gift Board Builder (Overlay per Slot)</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Nunito:wght@400;800&family=Montserrat:wght@700&family=IBM+Plex+Sans+JP:wght@400;700&family=Rampart+One&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#0e1218;--card:#151a22;--muted:#93a3b8;--accent:#60a5fa;--line:#283140}
@@ -14,7 +14,11 @@ header .g{display:flex;flex-direction:column;gap:6px}
 header label{font-size:12px;color:var(--muted)}
 input[type=text],input[type=number],select{background:#0b0f15;border:1px solid #2a3140;color:#fff;border-radius:8px;padding:8px 10px}
 button{background:var(--accent);border:none;color:#08101f;font-weight:800;border-radius:10px;padding:10px 14px;cursor:pointer}
-main{display:grid;grid-template-columns:1fr 380px;gap:14px;padding:14px}
+.btn{background:#243246;color:#e5e7eb;border:1px solid #2a3140;border-radius:10px;padding:6px 10px;cursor:pointer}
+.btn.primary{background:var(--accent);color:#08101f;border:none}
+.btn.tiny{padding:4px 8px;font-size:12px;border-radius:8px}
+.btn.danger{background:#2b1520;color:#fca5a5;border-color:#512333}
+main{display:grid;grid-template-columns:1fr 420px;gap:14px;padding:14px}
 .panel{background:var(--card);border:1px solid #263044;border-radius:14px;padding:12px}
 h3{margin:0 0 10px;font-size:16px}
 .row{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-bottom:10px}
@@ -24,12 +28,18 @@ small{color:var(--muted)}
 .item{display:flex;justify-content:space-between;align-items:center;background:#0f1623;border:1px solid #2f3a4f;padding:10px 12px;border-radius:10px;cursor:pointer}
 .item b{font-weight:800}
 #slots{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.slot{background:#111722;border:1px solid #2a3140;border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px;min-height:120px}
+.slot{background:#111722;border:1px solid #2a3140;border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px;min-height:160px}
 .slot .cap{font-size:12px;color:var(--muted)}
 .slot .row1{display:flex;gap:10px;align-items:center}
-.slot img{width:56px;height:56px;object-fit:contain;background:#0b0f15;border:1px solid #2a3140;border-radius:10px}
+.slot img.thumb{width:56px;height:56px;object-fit:contain;background:#0b0f15;border:1px solid #2a3140;border-radius:10px}
 .slot .name{font-weight:800}
 .slot input[type=text]{width:100%}
+.slot .tools{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}
+.slot .overlayControls{display:grid;grid-template-columns:repeat(6, 1fr);gap:8px;background:#0e141f;border:1px solid #2a3140;border-radius:10px;padding:8px}
+.slot .overlayControls .span3{grid-column:span 3}
+.slot .overlayControls .span6{grid-column:span 6}
+.rangeRow{display:flex;gap:8px;align-items:center}
+.rangeRow input[type=range]{flex:1}
 .hr{height:1px;background:#232a38;margin:10px 0}
 .controls{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
 .controls .span2{grid-column:span 2}
@@ -39,6 +49,7 @@ small{color:var(--muted)}
 #preview{width:100%;height:560px;background:#0b0f15;border-radius:8px}
 .note{color:var(--muted);font-size:12px}
 .badge{display:inline-block;border:1px solid #2a3140;border-radius:8px;padding:5px 8px;background:#0e141f}
+@media (max-width: 980px){ main{grid-template-columns:1fr} }
 </style>
 </head>
 <body>
@@ -56,14 +67,14 @@ small{color:var(--muted)}
     <input id="proxy" type="text" placeholder="例）https://api.allorigins.win/raw?url=" value="https://api.allorigins.win/raw?url=">
   </div>
   <div class="g">
-    <button id="load">読み込む</button>
+    <button id="load" class="primary">読み込む</button>
   </div>
   <div class="g">
-    <button id="bgBtn">背景画像を選ぶ</button>
+    <button id="bgBtn" class="btn">背景画像を選ぶ</button>
     <input id="bgFile" type="file" accept="image/*" style="display:none">
   </div>
   <div class="g" style="margin-left:auto">
-    <button id="savePng">PNGとして保存</button>
+    <button id="savePng" class="primary">PNGとして保存</button>
     <label class="note"><input type="checkbox" id="withText"> テキストも出力</label>
   </div>
 </header>
@@ -72,63 +83,29 @@ small{color:var(--muted)}
   <section class="panel">
     <h3>ライブプレビュー</h3>
     <div class="controls">
+      <div class="col"><label>列（COLS）</label><input id="cols" type="number" min="1" max="12" value="6"></div>
+      <div class="col"><label>行（ROWS）</label><input id="rows" type="number" min="1" max="12" value="3"></div>
+      <div class="col"><label>枠幅 TILE_W</label><input id="tileW" type="number" value="320"></div>
+      <div class="col"><label>枠高 TILE_H</label><input id="tileH" type="number" value="180"></div>
+      <div class="col"><label>枠間 GAP</label><input id="gap" type="number" value="20"></div>
+      <div class="col"><label>丸角 px</label><input id="radius" type="number" value="18"></div>
+      <div class="col"><label>左上オフセットX</label><input id="offX" type="number" value="0"></div>
+      <div class="col"><label>左上オフセットY</label><input id="offY" type="number" value="0"></div>
       <div class="col">
-        <label>列（COLS）</label><input id="cols" type="number" min="1" max="12" value="6">
-      </div>
-      <div class="col">
-        <label>行（ROWS）</label><input id="rows" type="number" min="1" max="12" value="3">
-      </div>
-      <div class="col">
-        <label>枠幅 TILE_W</label><input id="tileW" type="number" value="320">
-      </div>
-      <div class="col">
-        <label>枠高 TILE_H</label><input id="tileH" type="number" value="180">
-      </div>
-      <div class="col">
-        <label>枠間 GAP</label><input id="gap" type="number" value="20">
-      </div>
-      <div class="col">
-        <label>丸角 px</label><input id="radius" type="number" value="18">
-      </div>
-
-      <div class="col">
-        <label>左上オフセットX</label><input id="offX" type="number" value="0">
-      </div>
-      <div class="col">
-        <label>左上オフセットY</label><input id="offY" type="number" value="0">
-      </div>
-      <div class="col">
-        <label>アイコン倍率（％・タイル基準）</label><input id="iconScale" type="range" min="50" max="200" value="100">
+        <label>アイコン倍率（％）</label>
+        <input id="iconScale" type="range" min="50" max="250" value="100">
         <small id="iconScaleLabel">現在: 100%</small>
       </div>
-      <div class="col">
-        <label>アイコン余白 px</label><input id="iconPad" type="number" value="14">
-      </div>
-      <div class="col">
-        <label>はみ出しOK（タイル外へ）</label>
-        <select id="overflow"><option value="0">OFF</option><option value="1">ON</option></select>
-      </div>
-      <div class="col">
-        <label>ガイド枠描画</label>
-        <select id="guide"><option value="1">ON</option><option value="0">OFF</option></select>
-      </div>
-
-      <div class="span2 col">
-        <label>テキスト（プレビュー用／スロットごと）</label>
-        <small>各スロットの入力欄に記入してください</small>
-      </div>
-      <div class="col">
-        <label>文字サイズ px</label><input id="textSize" type="number" value="86">
-      </div>
-      <div class="col">
-        <label>文字色</label><input id="textColor" type="color" value="#ffffff">
-      </div>
+      <div class="col"><label>アイコン余白 px</label><input id="iconPad" type="number" value="14"></div>
+      <div class="col"><label>はみ出しOK</label><select id="overflow"><option value="0">OFF</option><option value="1">ON</option></select></div>
+      <div class="col"><label>ガイド枠描画</label><select id="guide"><option value="1">ON</option><option value="0">OFF</option></select></div>
+      <div class="col"><label>文字サイズ px</label><input id="textSize" type="number" value="86"></div>
+      <div class="col"><label>文字色</label><input id="textColor" type="color" value="#ffffff"></div>
       <div class="col">
         <label>縁</label><input id="textStroke" type="color" value="#000000">
         <label class="note"><input type="checkbox" id="textStrokeOn" checked> 有効</label>
       </div>
-      <div class="col">
-        <label>フォント</label>
+      <div class="col"><label>フォント</label>
         <select id="fontFamily">
           <option value="Noto Sans JP, sans-serif">Noto Sans JP</option>
           <option value="IBM Plex Sans JP, sans-serif">IBM Plex Sans JP</option>
@@ -138,41 +115,24 @@ small{color:var(--muted)}
           <option value="system-ui, sans-serif">system-ui</option>
         </select>
       </div>
-      <div class="col">
-        <label>揃え（横）</label>
-        <select id="textAlignX">
-          <option value="left">左</option>
-          <option value="center" selected>中央</option>
-          <option value="right">右</option>
-        </select>
+      <div class="col"><label>揃え（横）</label>
+        <select id="textAlignX"><option value="left">左</option><option value="center" selected>中央</option><option value="right">右</option></select>
       </div>
-      <div class="col">
-        <label>揃え（縦）</label>
-        <select id="textAlignY">
-          <option value="top">上</option>
-          <option value="middle" selected>中央</option>
-          <option value="bottom">下</option>
-        </select>
+      <div class="col"><label>揃え（縦）</label>
+        <select id="textAlignY"><option value="top">上</option><option value="middle" selected>中央</option><option value="bottom">下</option></select>
       </div>
-      <div class="col">
-        <label>文字オフセットX</label><input id="textOffX" type="number" value="0">
-      </div>
-      <div class="col">
-        <label>文字オフセットY</label><input id="textOffY" type="number" value="0">
-      </div>
+      <div class="col"><label>文字オフセットX</label><input id="textOffX" type="number" value="0"></div>
+      <div class="col"><label>文字オフセットY</label><input id="textOffY" type="number" value="0"></div>
     </div>
-
-    <div id="previewWrap">
-      <canvas id="preview"></canvas>
-    </div>
-    <div class="note">※ 生成PNGはデフォルトでテキストを描画しません（オプションで含めることは可能）。</div>
+    <div id="previewWrap"><canvas id="preview"></canvas></div>
+    <div class="note">※ PNGは既定でテキストを描画しません（チェックで含める）。</div>
   </section>
 
   <aside class="panel">
     <h3>ギフト一覧（クリックで追加）</h3>
     <div id="list"></div>
     <div class="hr"></div>
-    <h3>配置中（最大 任意の行×列）</h3>
+    <h3>配置中（行×列まで）</h3>
     <div id="slots"></div>
   </aside>
 </main>
@@ -180,16 +140,19 @@ small{color:var(--muted)}
 <script>
 (() => {
   "use strict";
-  // ====== constants / state ======
+  // ===== state =====
   const SHEET_ID = document.getElementById("sheet").value.trim();
   const GID = document.getElementById("gid").value.trim();
-  let all = [];           // full gift list
-  let picked = [];        // current placements (array length <= rows*cols)
+  let all = [];
+  // picked item structure:
+  // {id,name,cost,imageUrl, note,
+  //  overlay?:{ url, bmp, name, scale:number(%)=100, offX=0, offY=0, rot=0, opacity=1 }}
+  let picked = [];
   const imgCache = new Map();
-  let bgImage = null;     // ImageBitmap for background
+  let bgImage = null;
   let bgSize = {w:1280,h:720};
 
-  // ====== DOM refs ======
+  // ===== dom =====
   const d = (id)=>document.getElementById(id);
   const list = d("list");
   const slots = d("slots");
@@ -206,10 +169,11 @@ small{color:var(--muted)}
   const fontFamilyEl=d("fontFamily"), textAlignXEl=d("textAlignX"), textAlignYEl=d("textAlignY"), textOffXEl=d("textOffX"), textOffYEl=d("textOffY");
   const withTextEl=d("withText");
 
-  // ====== helpers ======
+  // ===== helpers =====
   function toInt(el){ return parseInt(el.value,10)||0 }
+  function escapeHtml(s){ return String(s).replace(/[&<>\"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m])) }
   function tileRect(i){
-    const COLS = toInt(colsEl), ROWS = toInt(rowsEl);
+    const COLS=toInt(colsEl), ROWS=toInt(rowsEl);
     const TILE_W=toInt(tileWEl), TILE_H=toInt(tileHEl), GAP=toInt(gapEl);
     const GRID_W = COLS*TILE_W + (COLS+1)*GAP;
     const GRID_H = ROWS*TILE_H + (ROWS+1)*GAP;
@@ -231,40 +195,40 @@ small{color:var(--muted)}
   }
   async function fetchText(url){
     const cands = [];
-    const user = (proxyInput.value||"").trim();
-    const u = encodeURIComponent(url);
-    if(user) cands.push(user + u);
+    const user=(proxyInput.value||"").trim();
+    const enc = encodeURIComponent(url);
+    if(user) cands.push(user + enc);
     cands.push(url);
     cands.push("https://cors.isomorphic-git.org/" + url);
-    for(const u2 of cands){
+    for(const u of cands){
       try{
-        const res = await fetch(u2,{cache:"no-store"});
-        if(res.ok){ return await res.text() }
+        const res=await fetch(u,{cache:"no-store"});
+        if(res.ok) return await res.text();
       }catch{}
     }
     throw new Error("fetch failed");
   }
   async function fetchBlob(url){
-    const cands = [];
-    const user = (proxyInput.value||"").trim();
+    const cands=[];
+    const user=(proxyInput.value||"").trim();
     if(user) cands.push(user + encodeURIComponent(url));
     try{
-      const u = new URL(url);
+      const u=new URL(url);
       cands.push(`https://images.weserv.nl/?url=${u.host}${u.pathname}${u.search}`);
     }catch{}
     cands.push("https://cors.isomorphic-git.org/" + url);
     cands.push(url);
     for(const u2 of cands){
       try{
-        const res = await fetch(u2,{cache:"no-store"});
+        const res=await fetch(u2,{cache:"no-store"});
         if(!res.ok) continue;
-        const b = await res.blob();
+        const b=await res.blob();
         if((b.type||"").startsWith("image/")) return b;
       }catch{}
     }
     throw new Error("image fetch failed");
   }
-  async function getBitmap(url){
+  async function getBitmapFromUrl(url){
     if(imgCache.has(url)) return imgCache.get(url);
     const blob = await fetchBlob(url);
     const bmp = await createImageBitmap(blob);
@@ -272,7 +236,6 @@ small{color:var(--muted)}
     return bmp;
   }
   function parseGViz(raw){
-    // strip function wrapper
     const s = raw.substring(raw.indexOf("{"), raw.lastIndexOf("}")+1);
     const json = JSON.parse(s);
     const cols = json.table.cols.map(c=>c.label);
@@ -285,7 +248,7 @@ small{color:var(--muted)}
         const i=idx[k]; if(i==null) return "";
         const obj=c[i]; if(!obj) return "";
         if(obj.f && /href\s*=/.test(obj.f)){
-          const m = obj.f.match(/href\s*=\s*"([^"]+)"/i);
+          const m=obj.f.match(/href\s*=\s*"([^"]+)"/i);
           if(m) return m[1];
         }
         return obj.v ?? "";
@@ -301,14 +264,14 @@ small{color:var(--muted)}
     return data;
   }
 
-  // ====== UI ======
+  // ===== UI =====
   function renderList(){
     list.innerHTML="";
     for(const g of all){
       const b=document.createElement("div");
       b.className="item";
       b.innerHTML=`<b>${escapeHtml(g.name)}</b><span class="badge">🪙 ${g.cost}</span>`;
-      b.onclick=()=>{ picked.push({...g, note:""}); renderSlots(); draw() };
+      b.onclick=()=>{ picked.push({...g, note:"", overlay:null}); renderSlots(); draw() };
       list.appendChild(b);
     }
   }
@@ -327,24 +290,109 @@ small{color:var(--muted)}
         const row=document.createElement("div");
         row.className="row1";
         const img=document.createElement("img");
-        // async load
-        getBitmap(g.imageUrl).then(()=>draw()).catch(()=>{});
-        img.src=g.imageUrl; // just placeholder thumbnail
+        img.className="thumb";
+        img.src=g.imageUrl;
         const nm=document.createElement("div");
         nm.className="name"; nm.textContent=`${g.name} / 🪙${g.cost}`;
         row.appendChild(img); row.appendChild(nm);
         div.appendChild(row);
 
+        // text per slot
         const input=document.createElement("input");
         input.type="text"; input.placeholder="このギフトに表示するテキスト（任意）";
         input.value=g.note||"";
         input.oninput=(e)=>{ picked[i].note=e.target.value; draw() };
         div.appendChild(input);
 
-        const small=document.createElement("div");
-        small.innerHTML=`<span class="note">${escapeHtml(g.id)}</span> <span style="float:right;cursor:pointer;color:#f87171" data-x>削除</span>`;
-        small.querySelector("[data-x]").onclick=()=>{ picked.splice(i,1); renderSlots(); draw() };
-        div.appendChild(small);
+        // overlay upload + controls
+        const tools=document.createElement("div");
+        tools.className="tools";
+        const addBtn=document.createElement("button");
+        addBtn.className="btn tiny"; addBtn.textContent=g.overlay? "追加画像を変更" : "追加画像を選ぶ";
+        const delBtn=document.createElement("button");
+        delBtn.className="btn tiny danger"; delBtn.textContent="追加画像を削除";
+        const file=document.createElement("input"); file.type="file"; file.accept="image/*"; file.style.display="none";
+        const fileLabel=document.createElement("span"); fileLabel.className="note"; fileLabel.textContent=g.overlay?.name || "（未指定）";
+        tools.appendChild(addBtn); tools.appendChild(delBtn);
+        tools.appendChild(file); tools.appendChild(fileLabel);
+        div.appendChild(tools);
+
+        addBtn.onclick=()=>file.click();
+        file.onchange=async (e)=>{
+          const f=e.target.files?.[0]; if(!f) return;
+          try{
+            const bmp=await createImageBitmap(f);
+            if(g.overlay?.url) URL.revokeObjectURL(g.overlay.url);
+            const objUrl=URL.createObjectURL(f);
+            picked[i].overlay={url:objUrl, bmp, name:f.name, scale:100, offX:0, offY:0, rot:0, opacity:1};
+            fileLabel.textContent=f.name;
+            addBtn.textContent="追加画像を変更";
+            renderSlots(); // re-render to show control panel
+            draw();
+          }catch{ alert("追加画像の読み込みに失敗しました"); }
+        };
+        delBtn.onclick=()=>{
+          if(g.overlay?.url) URL.revokeObjectURL(g.overlay.url);
+          picked[i].overlay=null; fileLabel.textContent="（未指定）"; addBtn.textContent="追加画像を選ぶ";
+          renderSlots(); draw();
+        };
+
+        // controls panel if overlay exists
+        if(g.overlay){
+          const oc=document.createElement("div"); oc.className="overlayControls";
+          oc.innerHTML=`
+            <div class="span3">
+              <label>倍率（％）</label>
+              <div class="rangeRow">
+                <input type="range" min="10" max="300" value="${g.overlay.scale}" data-k="scale">
+                <input type="number" min="10" max="300" value="${g.overlay.scale}" data-k="scaleN" style="width:80px">
+              </div>
+            </div>
+            <div class="col">
+              <label>オフセットX</label>
+              <input type="number" value="${g.overlay.offX}" data-k="offX">
+            </div>
+            <div class="col">
+              <label>オフセットY</label>
+              <input type="number" value="${g.overlay.offY}" data-k="offY">
+            </div>
+            <div class="col">
+              <label>回転（°）</label>
+              <input type="number" value="${g.overlay.rot}" data-k="rot">
+            </div>
+            <div class="span3">
+              <label>不透明度</label>
+              <div class="rangeRow">
+                <input type="range" min="10" max="100" value="${Math.round((g.overlay.opacity??1)*100)}" data-k="opacity">
+                <input type="number" min="10" max="100" value="${Math.round((g.overlay.opacity??1)*100)}" data-k="opacityN" style="width:80px">
+              </div>
+            </div>
+          `;
+          // wire events
+          const sync = ()=>{ draw() };
+          oc.querySelectorAll("input").forEach(inp=>{
+            inp.addEventListener("input", (e)=>{
+              const k = e.target.getAttribute("data-k");
+              const v = e.target.value;
+              if(k==="scale"){ g.overlay.scale = Math.min(300, Math.max(10, parseInt(v||"0",10))); oc.querySelector('[data-k="scaleN"]').value=g.overlay.scale; }
+              if(k==="scaleN"){ g.overlay.scale = Math.min(300, Math.max(10, parseInt(v||"0",10))); oc.querySelector('[data-k="scale"]').value=g.overlay.scale; }
+              if(k==="offX"){ g.overlay.offX = parseInt(v||"0",10); }
+              if(k==="offY"){ g.overlay.offY = parseInt(v||"0",10); }
+              if(k==="rot"){ g.overlay.rot = parseInt(v||"0",10); }
+              if(k==="opacity"){ g.overlay.opacity = Math.min(1, Math.max(0.1, parseInt(v||"0",10)/100)); oc.querySelector('[data-k="opacityN"]').value = Math.round(g.overlay.opacity*100); }
+              if(k==="opacityN"){ g.overlay.opacity = Math.min(1, Math.max(0.1, parseInt(v||"0",10)/100)); oc.querySelector('[data-k="opacity"]').value = Math.round(g.overlay.opacity*100); }
+              sync();
+            });
+          });
+          div.appendChild(oc);
+        }
+
+        // remove slot
+        const remove=document.createElement("button");
+        remove.className="btn tiny danger"; remove.textContent="スロットを削除";
+        remove.onclick=()=>{ if(g.overlay?.url) URL.revokeObjectURL(g.overlay.url); picked.splice(i,1); renderSlots(); draw() };
+        div.appendChild(remove);
+
       }else{
         const p=document.createElement("div");
         p.className="note"; p.textContent="（未配置）"; div.appendChild(p);
@@ -352,117 +400,85 @@ small{color:var(--muted)}
       slots.appendChild(div);
     }
   }
-  function escapeHtml(s){ return String(s).replace(/[&<>\"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m])) }
 
-  // ====== drawing ======
-  function resizeCanvas(){
-    const W=bgSize.w, H=bgSize.h;
-    canvas.width=W; canvas.height=H;
-  }
+  // ===== drawing =====
+  function resizeCanvas(){ canvas.width=bgSize.w; canvas.height=bgSize.h }
   function clearCanvas(){
     ctx.fillStyle="#0b0f15"; ctx.fillRect(0,0,canvas.width,canvas.height);
     if(bgImage) ctx.drawImage(bgImage,0,0,canvas.width,canvas.height);
   }
   function draw(){
-    resizeCanvas();
-    clearCanvas();
+    resizeCanvas(); clearCanvas();
     const COLS=toInt(colsEl), ROWS=toInt(rowsEl), TILE_W=toInt(tileWEl), TILE_H=toInt(tileHEl), GAP=toInt(gapEl);
     const R=toInt(radEl), PAD=toInt(iconPadEl), SCALE=toInt(iconScaleEl)/100;
     const withGuide = d("guide").value==="1";
     const allowOverflow = d("overflow").value==="1";
     iconScaleLabel.textContent=`現在: ${Math.round(SCALE*100)}%`;
 
-    // grid
     for(let i=0;i<COLS*ROWS;i++){
       const r = tileRect(i);
       if(withGuide){
-        ctx.strokeStyle="rgba(255,255,255,.08)";
-        ctx.lineWidth=2;
-        roundRectPath(r.x,r.y,r.w,r.h,R);
-        ctx.stroke();
+        ctx.strokeStyle="rgba(255,255,255,.08)"; ctx.lineWidth=2;
+        roundRectPath(r.x,r.y,r.w,r.h,R); ctx.stroke();
       }
-      const g = picked[i];
-      if(!g) continue;
-
-      // image
-      const maxW = r.w - PAD*2;
-      const maxH = r.h - PAD*2;
-      getBitmap(g.imageUrl).then(bmp=>{
-        const ratio = Math.min(maxW/bmp.width, maxH/bmp.height) * (allowOverflow? Math.max(1,SCALE):SCALE);
+      const g = picked[i]; if(!g) continue;
+      const maxW=r.w-PAD*2, maxH=r.h-PAD*2;
+      // base icon (from sheet)
+      getBitmapFromUrl(g.imageUrl).then(bmp=>{
+        const ratio=Math.min(maxW/bmp.width, maxH/bmp.height)*(allowOverflow?Math.max(1,SCALE):SCALE);
         const iw=bmp.width*ratio, ih=bmp.height*ratio;
-        const ix = r.x + (r.w - iw)/2;
-        const iy = r.y + (r.h - ih)/2;
+        const ix=r.x+(r.w-iw)/2, iy=r.y+(r.h-ih)/2;
         ctx.drawImage(bmp, ix, iy, iw, ih);
       }).catch(()=>{});
+
+      // overlay if any (draw above base)
+      if(g.overlay && g.overlay.bmp){
+        const bmp=g.overlay.bmp;
+        const baseFit = Math.min(maxW/bmp.width, maxH/bmp.height);
+        const s = baseFit * (g.overlay.scale/100);
+        const iw=bmp.width*s, ih=bmp.height*s;
+        const cx = r.x + r.w/2 + (g.overlay.offX||0);
+        const cy = r.y + r.h/2 + (g.overlay.offY||0);
+        const angle=(g.overlay.rot||0)*Math.PI/180;
+        ctx.save();
+        ctx.globalAlpha = (g.overlay.opacity==null?1:g.overlay.opacity);
+        ctx.translate(cx, cy);
+        ctx.rotate(angle);
+        ctx.drawImage(bmp, -iw/2, -ih/2, iw, ih);
+        ctx.restore();
+      }
     }
 
-    // text overlay pass
-    const drawText = withTextEl.checked || true; // always for preview; export will toggle
-    if(drawText){
-      ctx.textAlign="center"; ctx.textBaseline="middle";
-      ctx.font=`${toInt(textSizeEl)}px ${fontFamilyEl.value}`;
-      const color=textColorEl.value; const stroke=textStrokeEl.value; const strokeOn=textStrokeOnEl.checked;
-      for(let i=0;i<COLS*ROWS;i++){
-        const r=tileRect(i);
-        const g=picked[i]; if(!g || !g.note) continue;
-        // anchor
-        let ax=textAlignXEl.value; let ay=textAlignYEl.value;
-        let x = (ax==="left")? r.x+12 : (ax==="right")? r.x+r.w-12 : r.x+r.w/2;
-        let y = (ay==="top")? r.y+12 : (ay==="bottom")? r.y+r.h-12 : r.y+r.h/2;
-        x += toInt(textOffXEl); y += toInt(textOffYEl);
-        ctx.font=`${toInt(textSizeEl)}px ${fontFamilyEl.value}`;
-        ctx.textAlign = (ax==="left")?"left":(ax==="right")?"right":"center";
-        ctx.textBaseline = (ay==="top")?"top":(ay==="bottom")?"bottom":"middle";
-        if(strokeOn){ ctx.lineWidth=Math.max(4, Math.floor(toInt(textSizeEl)/16)); ctx.strokeStyle=stroke; ctx.strokeText(g.note, x, y) }
-        ctx.fillStyle=color; ctx.fillText(g.note, x, y);
-      }
+    // text preview (always on canvas preview)
+    ctx.font=`${toInt(textSizeEl)}px ${fontFamilyEl.value}`;
+    const color=textColorEl.value; const stroke=textStrokeEl.value; const strokeOn=textStrokeOnEl.checked;
+    for(let i=0;i<COLS*ROWS;i++){
+      const g=picked[i]; if(!g || !g.note) continue;
+      const r=tileRect(i);
+      // anchor
+      let ax=textAlignXEl.value, ay=textAlignYEl.value;
+      let x=(ax==="left")? r.x+12 : (ax==="right")? r.x+r.w-12 : r.x+r.w/2;
+      let y=(ay==="top")? r.y+12 : (ay==="bottom")? r.y+r.h-12 : r.y+r.h/2;
+      x+=toInt(textOffXEl); y+=toInt(textOffYEl);
+      ctx.textAlign=(ax==="left")?"left":(ax==="right")?"right":"center";
+      ctx.textBaseline=(ay==="top")?"top":(ay==="bottom")?"bottom":"middle";
+      if(strokeOn){ ctx.lineWidth=Math.max(4,Math.floor(toInt(textSizeEl)/16)); ctx.strokeStyle=stroke; ctx.strokeText(g.note,x,y) }
+      ctx.fillStyle=color; ctx.fillText(g.note,x,y);
     }
   }
 
-  // ====== events ======
-  document.getElementById("load").onclick = async ()=>{
-    try{
-      const base = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?gid=${GID}&tqx=out:json`;
-      const raw = await fetchText(base);
-      all = parseGViz(raw);
-      renderList();
-      renderSlots();
-      draw();
-    }catch(e){
-      console.error(e); alert("シートの読み込みに失敗しました。権限とURLを確認してください。");
-    }
-  };
-  ["change","input"].forEach(ev=>{
-    [colsEl,rowsEl,tileWEl,tileHEl,gapEl,radEl,offXEl,offYEl,iconScaleEl,iconPadEl,overflowEl,guideEl,textSizeEl,textColorEl,textStrokeEl,textStrokeOnEl,fontFamilyEl,textAlignXEl,textAlignYEl,textOffXEl,textOffYEl,withTextEl].forEach(el=>{
-      el.addEventListener(ev,()=>{ if(el===iconScaleEl){ iconScaleLabel.textContent=`現在: ${el.value}%`; } draw() })
-    });
-  });
-
-  // background
-  d("bgBtn").onclick=()=> d("bgFile").click();
-  d("bgFile").onchange=async (e)=>{
-    const f=e.target.files[0]; if(!f) return;
-    try{
-      const bmp = await createImageBitmap(f);
-      bgImage = bmp; bgSize = {w:bmp.width,h:bmp.height}; draw();
-    }catch{ alert("背景画像の読み込みに失敗しました"); }
-  };
-
-  // save PNG
+  // ===== export PNG =====
   d("savePng").onclick=async ()=>{
-    const includeText = withTextEl.checked;
-    // redraw into an offscreen to honor includeText flag
+    const includeText=withTextEl.checked;
     const off=document.createElement("canvas"); off.width=canvas.width; off.height=canvas.height;
     const c2=off.getContext("2d");
-    // draw background
+    // bg
     c2.fillStyle="#0b0f15"; c2.fillRect(0,0,off.width,off.height);
     if(bgImage) c2.drawImage(bgImage,0,0,off.width,off.height);
-
-    // draw images
+    // grid helpers
     const COLS=toInt(colsEl), ROWS=toInt(rowsEl), TILE_W=toInt(tileWEl), TILE_H=toInt(tileHEl), GAP=toInt(gapEl);
-    const R=toInt(radEl), PAD=toInt(iconPadEl), SCALE=toInt(iconScaleEl)/100;
+    const PAD=toInt(iconPadEl), SCALE=toInt(iconScaleEl)/100;
     const allowOverflow = d("overflow").value==="1";
-    function rr(x,y,w,h,r){ c2.beginPath(); c2.moveTo(x+r,y); c2.arcTo(x+w,y,x+w,y+h,r); c2.arcTo(x+w,y+h,x,y+h,r); c2.arcTo(x,y+h,x,y,r); c2.arcTo(x,y,x+w,y,r); c2.closePath() }
     function rect(i){
       const GRID_W = COLS*TILE_W + (COLS+1)*GAP;
       const GRID_H = ROWS*TILE_H + (ROWS+1)*GAP;
@@ -473,26 +489,40 @@ small{color:var(--muted)}
       const y = offy + GAP + r*(TILE_H+GAP);
       return {x,y,w:TILE_W,h:TILE_H}
     }
-    // draw icons sequentially to ensure bitmaps resolved
+    // draw base icons + overlays sequentially
     for(let i=0;i<COLS*ROWS;i++){
       const g=picked[i]; if(!g) continue;
       const r=rect(i);
+      const maxW=r.w-PAD*2, maxH=r.h-PAD*2;
       try{
-        const bmp=await getBitmap(g.imageUrl);
-        const maxW=r.w-PAD*2, maxH=r.h-PAD*2;
+        const bmp=await getBitmapFromUrl(g.imageUrl);
         const ratio=Math.min(maxW/bmp.width, maxH/bmp.height)*(allowOverflow?Math.max(1,SCALE):SCALE);
         const iw=bmp.width*ratio, ih=bmp.height*ratio;
         const ix=r.x+(r.w-iw)/2, iy=r.y+(r.h-ih)/2;
-        c2.drawImage(bmp,ix,iy,iw,ih);
+        c2.drawImage(bmp, ix, iy, iw, ih);
       }catch{}
+      if(g.overlay && g.overlay.bmp){
+        const bmp=g.overlay.bmp;
+        const baseFit=Math.min(maxW/bmp.width, maxH/bmp.height);
+        const s=baseFit*(g.overlay.scale/100);
+        const iw=bmp.width*s, ih=bmp.height*s;
+        const cx = r.x + r.w/2 + (g.overlay.offX||0);
+        const cy = r.y + r.h/2 + (g.overlay.offY||0);
+        const angle=(g.overlay.rot||0)*Math.PI/180;
+        c2.save();
+        c2.globalAlpha=(g.overlay.opacity==null?1:g.overlay.opacity);
+        c2.translate(cx,cy); c2.rotate(angle);
+        c2.drawImage(bmp,-iw/2,-ih/2,iw,ih);
+        c2.restore();
+      }
     }
-
     if(includeText){
       c2.font=`${toInt(textSizeEl)}px ${fontFamilyEl.value}`;
       const color=textColorEl.value; const stroke=textStrokeEl.value; const strokeOn=textStrokeOnEl.checked;
       for(let i=0;i<COLS*ROWS;i++){
-        const r=rect(i); const g=picked[i]; if(!g || !g.note) continue;
-        let ax=textAlignXEl.value; let ay=textAlignYEl.value;
+        const g=picked[i]; if(!g || !g.note) continue;
+        const r=rect(i);
+        let ax=textAlignXEl.value, ay=textAlignYEl.value;
         let x=(ax==="left")? r.x+12 : (ax==="right")? r.x+r.w-12 : r.x+r.w/2;
         let y=(ay==="top")? r.y+12 : (ay==="bottom")? r.y+r.h-12 : r.y+r.h/2;
         x+=toInt(textOffXEl); y+=toInt(textOffYEl);
@@ -508,11 +538,37 @@ small{color:var(--muted)}
     }catch{ alert("PNG生成に失敗しました"); }
   };
 
-  // ====== init ======
-  function init(){
-    bgSize={w:1280,h:720};
-    resizeCanvas(); clearCanvas(); draw();
-  }
+  // ===== background =====
+  d("bgBtn").onclick=()=> d("bgFile").click();
+  d("bgFile").onchange=async (e)=>{
+    const f=e.target.files?.[0]; if(!f) return;
+    try{
+      const bmp=await createImageBitmap(f);
+      bgImage=bmp; bgSize={w:bmp.width,h:bmp.height}; draw();
+    }catch{ alert("背景画像の読み込みに失敗しました"); }
+  };
+
+  // ===== load sheet =====
+  d("load").onclick=async ()=>{
+    try{
+      const base = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?gid=${GID}&tqx=out:json`;
+      const raw = await fetchText(base);
+      all = parseGViz(raw);
+      renderList(); renderSlots(); draw();
+    }catch(e){
+      console.error(e); alert("シートの読み込みに失敗しました。権限とURLを確認してください。");
+    }
+  };
+
+  // controls redraw
+  ["change","input"].forEach(ev=>{
+    [colsEl,rowsEl,tileWEl,tileHEl,gapEl,radEl,offXEl,offYEl,iconScaleEl,iconPadEl,overflowEl,guideEl,textSizeEl,textColorEl,textStrokeEl,textStrokeOnEl,fontFamilyEl,textAlignXEl,textAlignYEl,textOffXEl,textOffYEl,withTextEl].forEach(el=>{
+      el.addEventListener(ev,()=>{ if(el===iconScaleEl){ iconScaleLabel.textContent=`現在: ${el.value}%`; } draw() })
+    });
+  });
+
+  // init
+  function init(){ canvas.width=bgSize.w; canvas.height=bgSize.h; draw() }
   init();
 })();
 </script>

@@ -4,47 +4,48 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Gift Board Generator</title>
-  <!-- GiftBoard build 2025-08-12 03:15 JST (no TypeScript casts) -->
+  <!-- GiftBoard build 2025-08-12 (Pages-ready, JSONP fallback, no TS casts) -->
+  <link rel="icon" href="data:,">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
   <style>
-    html,body{height:100%;}
-    input[type="file"].file-hide{position:absolute;left:-9999px;}
+    html,body{height:100%}
     .scrollbar::-webkit-scrollbar{height:10px;width:10px}
     .scrollbar::-webkit-scrollbar-thumb{background:#2b3446;border-radius:6px}
     .scrollbar::-webkit-scrollbar-track{background:#0e1420}
+    input[type="file"].file-hide{position:absolute;left:-9999px}
   </style>
 </head>
 <body class="bg-slate-900 text-slate-200">
   <div class="max-w-[1400px] mx-auto p-4 space-y-4">
 
     <!-- Top controls -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 items-end">
-      <div class="lg:col-span-3">
-        <label class="block text-xs text-slate-400">Sheet ID</label>
-        <input id="sheetId" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" placeholder="スプレッドシートのID" />
+    <div class="grid grid-cols-1 xl:grid-cols-12 gap-3 items-end">
+      <div class="xl:col-span-3">
+        <label class="block text-xs text-slate-400">Sheet ID（固定）</label>
+        <input id="sheetId" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" value="15QtBjbdETvUNL64JF46MvTvkfXaZI_jAtTphKQH6Y5U" readonly />
       </div>
-      <div class="lg:col-span-2">
-        <label class="block text-xs text-slate-400">gid</label>
-        <input id="gid" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" placeholder="シートのgid" />
+      <div class="xl:col-span-2">
+        <label class="block text-xs text-slate-400">gid（固定）</label>
+        <input id="gid" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" value="1487601753" readonly />
       </div>
-      <div class="lg:col-span-4">
-        <label class="block text-xs text-slate-400">（任意）CSV直リンク（公開CSV URL）</label>
+      <div class="xl:col-span-4">
+        <label class="block text-xs text-slate-400">（任意）公開CSV直リンク（あるなら最優先）</label>
         <input id="csvUrl" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" placeholder="https://docs.google.com/spreadsheets/d/e/.../pub?gid=...&single=true&output=csv" />
       </div>
-      <div class="lg:col-span-3">
-        <label class="block text-xs text-slate-400">CORSプロキシURL（任意）</label>
-        <input id="proxy" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" placeholder="https://api.allorigins.win/raw?url=" />
+      <div class="xl:col-span-3">
+        <label class="block text-xs text-slate-400">CORSプロキシURL（既定）</label>
+        <input id="proxy" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" value="https://api.allorigins.win/raw?url=" />
       </div>
 
-      <div class="lg:col-span-2 flex gap-2">
+      <div class="xl:col-span-3 flex gap-2">
         <button id="loadBtn" class="px-4 py-2 rounded bg-sky-500 text-slate-900 font-bold">読み込む</button>
         <label class="relative px-4 py-2 rounded bg-slate-700 cursor-pointer">
           <input id="bgFile" type="file" accept="image/*" class="file-hide" />
           <span>背景画像を選ぶ</span>
         </label>
       </div>
-      <div class="lg:col-span-2 flex gap-2">
+      <div class="xl:col-span-4 flex gap-2">
         <label class="relative px-4 py-2 rounded bg-slate-700 cursor-pointer">
           <input id="fontFile" type="file" accept=".ttf,.otf,.woff,.woff2" class="file-hide" />
           <span>フォントを追加</span>
@@ -53,59 +54,54 @@
           <option value="system-ui" selected>system-ui</option>
         </select>
       </div>
-      <div class="lg:col-span-2 flex gap-2">
+      <div class="xl:col-span-5 flex gap-2 justify-end">
         <button id="saveBtn" class="px-4 py-2 rounded bg-emerald-400 text-slate-900 font-bold">PNGとして保存</button>
       </div>
     </div>
 
-    <!-- Core layout -->
-    <div class="grid grid-cols-1 xl:grid-cols-12 gap-4">
-      <!-- Live preview + knobs -->
-      <div class="xl:col-span-7 space-y-3">
-        <!-- knobs -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div><label class="text-xs text-slate-400">列(COLS)</label><input id="cols" type="number" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" value="6" /></div>
-          <div><label class="text-xs text-slate-400">行(ROWS)</label><input id="rows" type="number" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" value="3" /></div>
-          <div><label class="text-xs text-slate-400">枠幅 TILE_W</label><input id="tileW" type="number" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" value="320" /></div>
-          <div><label class="text-xs text-slate-400">枠高 TILE_H</label><input id="tileH" type="number" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" value="180" /></div>
-          <div><label class="text-xs text-slate-400">枠間 GAP</label><input id="gap" type="number" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" value="20" /></div>
-          <div><label class="text-xs text-slate-400">角丸 px</label><input id="radius" type="number" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" value="18" /></div>
-          <div><label class="text-xs text-slate-400">左上オフセットX</label><input id="offX" type="number" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" value="0" /></div>
-          <div><label class="text-xs text-slate-400">左上オフセットY</label><input id="offY" type="number" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" value="0" /></div>
-        </div>
+    <!-- Knobs -->
+    <div class="grid grid-cols-2 md:grid-cols-8 gap-3">
+      <div><label class="text-xs text-slate-400">列(COLS)</label><input id="cols" type="number" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" value="6" /></div>
+      <div><label class="text-xs text-slate-400">行(ROWS)</label><input id="rows" type="number" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" value="3" /></div>
+      <div><label class="text-xs text-slate-400">TILE_W</label><input id="tileW" type="number" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" value="320" /></div>
+      <div><label class="text-xs text-slate-400">TILE_H</label><input id="tileH" type="number" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" value="180" /></div>
+      <div><label class="text-xs text-slate-400">GAP</label><input id="gap" type="number" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" value="20" /></div>
+      <div><label class="text-xs text-slate-400">角丸</label><input id="radius" type="number" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" value="18" /></div>
+      <div><label class="text-xs text-slate-400">オフセットX</label><input id="offX" type="number" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" value="0" /></div>
+      <div><label class="text-xs text-slate-400">オフセットY</label><input id="offY" type="number" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" value="0" /></div>
+    </div>
 
+    <!-- Preview + right panel -->
+    <div class="grid grid-cols-1 xl:grid-cols-12 gap-4">
+      <!-- Left: preview fixed width -->
+      <div class="xl:col-span-8 space-y-3">
         <div class="flex items-center gap-3">
           <label class="text-xs text-slate-400">ズーム</label>
           <input id="zoom" type="range" min="50" max="200" value="100" class="w-64" />
           <button id="refreshBtn" class="px-3 py-1 bg-slate-700 rounded">更新</button>
           <label class="text-xs flex items-center gap-2"><input id="showTextPreview" type="checkbox" class="scale-125" /> プレビューでテキスト表示</label>
         </div>
-
-        <!-- Live preview area -->
         <div class="relative bg-slate-950 rounded-xl border border-slate-800 p-3">
           <canvas id="preview" class="w-full h-auto block mx-auto"></canvas>
           <div class="absolute right-2 top-2 text-xs text-slate-400" id="bgInfo"></div>
         </div>
 
-        <p class="text-xs text-slate-400">※ 生成PNGにはガイドや枠・テキストは設定に応じて描画されます（デフォルト: テキストは出力のみ）。</p>
-      </div>
-
-      <!-- Right: gift list / picked list -->
-      <div class="xl:col-span-5 space-y-4">
-        <div class="bg-slate-800/40 border border-slate-700 rounded-xl p-3">
-          <div class="flex items-center justify-between mb-2">
-            <div class="font-bold">ギフト一覧（クリックで追加）</div>
-            <button id="clearBtn" class="text-xs px-2 py-1 bg-slate-700 rounded">クリア</button>
-          </div>
-          <div id="giftList" class="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-[420px] overflow-auto scrollbar"></div>
-          <div class="text-[11px] text-slate-400 mt-2">必要カラム：Gift ID / Gift Name / Gift Cost / Gift Image URL</div>
-        </div>
-
+        <!-- Picked bar (one line under preview) -->
         <div class="bg-slate-800/40 border border-slate-700 rounded-xl p-3">
           <div class="flex items-center justify-between mb-2">
             <div class="font-bold">配置中（ドラッグで並び替え・クリックで編集）</div>
+            <button id="clearBtn" class="text-xs px-2 py-1 bg-slate-700 rounded">クリア</button>
           </div>
           <div id="pickedBar" class="flex gap-2 overflow-x-auto scrollbar min-h-[96px]"></div>
+        </div>
+      </div>
+
+      <!-- Right: list + editor -->
+      <div class="xl:col-span-4 space-y-4">
+        <div class="bg-slate-800/40 border border-slate-700 rounded-xl p-3">
+          <div class="font-bold mb-2">ギフト一覧（クリックで追加）</div>
+          <div id="giftList" class="grid grid-cols-2 md:grid-cols-2 gap-2 max-h-[520px] overflow-auto scrollbar"></div>
+          <div class="text-[11px] text-slate-400 mt-2">必要カラム：Gift ID / Gift Name / Gift Cost / Gift Image URL</div>
         </div>
 
         <div class="bg-slate-800/40 border border-slate-700 rounded-xl p-3 hidden" id="slotEditorWrap">
@@ -143,7 +139,6 @@
             </div>
           </div>
         </div>
-
       </div>
     </div>
 
@@ -152,19 +147,20 @@
 
 <script>
 (() => {
-  // ====== constants & state ======
+  // ===== constants & state =====
   const DEFAULT_SHEET = "15QtBjbdETvUNL64JF46MvTvkfXaZI_jAtTphKQH6Y5U";
   const DEFAULT_GID   = "1487601753";
   const DEFAULT_PROXY = "https://api.allorigins.win/raw?url=";
-  const PREVIEW_BASE_W = 1080;
+  const PREVIEW_BASE_W = 1080; // TikTok 基準幅
 
   const imageCache = new Map();
   let gifts = [];
   let picked = [];
   let bgImg = null;
   let userFont = null;
+  let editingIndex = -1;
 
-  // ====== DOM ======
+  // ===== DOM =====
   const el = (id) => document.getElementById(id);
   const sheetId = el('sheetId'), gid = el('gid'), csvUrl = el('csvUrl'), proxy = el('proxy');
   const cols = el('cols'), rows = el('rows'), tileW = el('tileW'), tileH = el('tileH'), gap = el('gap'), radius = el('radius'), offX = el('offX'), offY = el('offY');
@@ -178,14 +174,14 @@
     ovFile: el('edOverlayFile'), ovScale: el('edOvScale'), ovX: el('edOvX'), ovY: el('edOvY'),
     textPreview: el('edTextPreview'), del: el('edDelete')
   };
-  let editingIndex = -1;
 
   // defaults
-  sheetId.value = DEFAULT_SHEET;
-  gid.value = DEFAULT_GID;
-  proxy.value = DEFAULT_PROXY;
+  sheetId.value = DEFAULT_SHEET; gid.value = DEFAULT_GID; proxy.value = DEFAULT_PROXY;
 
-  // ====== utils ======
+  // ===== utils =====
+  function px(n){ return Number(n||0) || 0; }
+  function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
   function csvToRows(csvText){
     const rows=[]; let i=0, cell='', row=[], inQ=false;
     while(i<csvText.length){
@@ -202,7 +198,7 @@
       if(ch === '\n'){ row.push(cell); rows.push(row); cell=''; row=[]; i++; continue; }
       if(ch === '\r'){ i++; continue; }
       const code = ch.charCodeAt(0);
-      if(code===0xFEFF || code===0x200B || code===0x200C || code===0x200D){ i++; continue; }
+      if(code===0xFEFF || code===0x200B || code===0x200C || code===0x200D){ i++; continue; } // BOM/ZW*
       cell += ch; i++;
     }
     row.push(cell); rows.push(row);
@@ -246,26 +242,55 @@
     throw new Error('fetch failed');
   }
 
+  // ---- GViz JSONP fallback (no CORS needed) ----
+  function loadSheetViaGViz(sheetId, gid, timeoutMs = 12000) {
+    return new Promise((resolve, reject) => {
+      const cbName = "__gviz_cb_" + Math.random().toString(36).slice(2);
+      const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?gid=${gid}&tqx=out:json;responseHandler=${cbName}`;
+      const s = document.createElement("script");
+      let timer = setTimeout(() => { cleanup(); reject(new Error("GViz timeout")); }, timeoutMs);
+      function cleanup(){ clearTimeout(timer); delete window[cbName]; if (s.parentNode) s.parentNode.removeChild(s); }
+      window[cbName] = (resp) => {
+        try {
+          const table = resp.table;
+          const header = table.cols.map(c => (c.label || "").trim());
+          const map = Object.fromEntries(header.map((h,i)=>[h,i]));
+          const rows = table.rows.map(r => r.c.map(c => (c ? c.v : "")));
+          const data = rows.map(r => ({
+            id:   r[map["Gift ID"]] || "",
+            name: r[map["Gift Name"]] || "",
+            cost: Number(r[map["Gift Cost"]] || 0),
+            imageUrl: peelHyperlinkCell(r[map["Gift Image URL"]] || "")
+          })).filter(g => g.id && g.name && g.imageUrl);
+          cleanup(); resolve(data);
+        } catch (e) { cleanup(); reject(e); }
+      };
+      s.src = url;
+      s.onerror = () => { cleanup(); reject(new Error("GViz load error")); };
+      document.head.appendChild(s);
+    });
+  }
+
   async function loadSheet(sheetId, gid){
-    let url = '';
-    if(csvUrl.value.trim()){
-      url = csvUrl.value.trim();
-    }else{
-      url = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
+    // Try CSV first (fast/clean), then fallback to GViz JSONP (no CORS)
+    try{
+      const base = (csvUrl && csvUrl.value.trim())
+        ? csvUrl.value.trim()
+        : `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
+      const text = await fetchTextWithProxies(base, (proxy && proxy.value || "").trim());
+      const rows = csvToRows(text);
+      const header = rows[0].map(h => h.trim());
+      const map = Object.fromEntries(header.map((h,i)=>[h,i]));
+      return rows.slice(1).map(r => ({
+        id: r[map["Gift ID"]] || "",
+        name: r[map["Gift Name"]] || "",
+        cost: Number(r[map["Gift Cost"]] || 0),
+        imageUrl: peelHyperlinkCell(r[map["Gift Image URL"]] || "")
+      })).filter(g => g.id && g.name && g.imageUrl);
+    }catch(e){
+      console.warn("CSV 失敗 → GViz にフォールバック:", e);
+      return await loadSheetViaGViz(sheetId, gid);
     }
-    const text = await fetchTextWithProxies(url, proxy.value.trim());
-    const rows = csvToRows(text);
-    if(!rows.length) return [];
-    const header = rows[0].map(h => h.trim());
-    const map = Object.fromEntries(header.map((h,i)=>[h,i]));
-    const need = ['Gift ID','Gift Name','Gift Cost','Gift Image URL'].every(k => k in map);
-    if(!need) throw new Error('ヘッダが不足しています');
-    return rows.slice(1).map(r => ({
-      id: r[map['Gift ID']] || '',
-      name: r[map['Gift Name']] || '',
-      cost: Number(r[map['Gift Cost']] || 0),
-      imageUrl: peelHyperlinkCell(r[map['Gift Image URL']] || '')
-    })).filter(g => g.id && g.name && g.imageUrl);
   }
 
   async function fetchImageBitmap(url, userProxy){
@@ -295,19 +320,7 @@
     return p;
   }
 
-  function px(n){ return Number(n||0) || 0; }
-
-  function rrect(ctx, x,y,w,h,r){
-    r = Math.min(r, w/2, h/2);
-    ctx.beginPath();
-    ctx.moveTo(x+r,y);
-    ctx.arcTo(x+w,y,x+w,y+h,r);
-    ctx.arcTo(x+w,y+h,x,y+h,r);
-    ctx.arcTo(x,y+h,x,y,r);
-    ctx.arcTo(x,y,x+w,y,r);
-    ctx.closePath();
-  }
-
+  // ===== drawing helpers =====
   function gridSize(){
     const W = px(cols.value)*px(tileW.value) + (px(cols.value)+1)*px(gap.value);
     const H = px(rows.value)*px(tileH.value) + (px(rows.value)+1)*px(gap.value);
@@ -324,7 +337,14 @@
       for(let c=0;c<COLS;c++){
         const x = x0 + GAP + c*(TW+GAP);
         const y = y0 + GAP + r*(TH+GAP);
-        rrect(ctx,x,y,TW,TH,R);
+        ctx.beginPath();
+        const rr = Math.min(R, TW/2, TH/2);
+        ctx.moveTo(x+rr,y);
+        ctx.arcTo(x+TW,y,x+TW,y+TH,rr);
+        ctx.arcTo(x+TW,y+TH,x,y+TH,rr);
+        ctx.arcTo(x,y+TH,x,y,rr);
+        ctx.arcTo(x,y,x+TW,y,rr);
+        ctx.closePath();
         ctx.stroke();
       }
     }
@@ -345,10 +365,7 @@
     const bctx = buf.getContext('2d');
     bctx.fillStyle = '#0b1320';
     bctx.fillRect(0,0,W,H);
-
-    if(bgImg){
-      bctx.drawImage(bgImg, 0, 0, W, H);
-    }
+    if(bgImg){ bctx.drawImage(bgImg, 0, 0, W, H); }
 
     drawGuide(bctx, px(offX.value), px(offY.value));
 
@@ -362,6 +379,7 @@
       const it = picked[i];
       if(!it) continue;
 
+      // base gift icon (bottom)
       try{
         const bmp = await fetchImageBitmap(it.gift.imageUrl, proxy.value.trim());
         const scalePct = (Number(it.iconScale)||100)/100;
@@ -373,6 +391,7 @@
         bctx.drawImage(bmp, ix, iy, iw, ih);
       }catch(e){}
 
+      // overlay image (middle)
       if(it.overlay && it.overlay.url){
         try{
           const img = await (async () => {
@@ -389,6 +408,7 @@
         }catch(e){}
       }
 
+      // text (top)
       if( (toExport || showTextPreview.checked || it.showTextPreview) && it.text ){
         bctx.save();
         bctx.fillStyle = it.color || '#ffffff';
@@ -410,6 +430,7 @@
     ctx.drawImage(buf, 0, 0, preview.width, preview.height);
   }
 
+  // ===== UI renderers =====
   function renderGiftList(){
     giftList.innerHTML = '';
     for(const g of gifts){
@@ -431,13 +452,11 @@
     }
   }
 
-  function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
-
   function renderPickedBar(){
     pickedBar.innerHTML='';
     picked.forEach((it, idx) => {
       const d = document.createElement('div');
-      d.className = 'min-w-[96px] max-w-[120px] flex-shrink-0 rounded-lg bg-slate-800/60 border border-slate-700 p-2 cursor-pointer';
+      d.className = 'min-w-[120px] max-w-[160px] flex-shrink-0 rounded-lg bg-slate-800/60 border border-slate-700 p-2 cursor-pointer';
       d.innerHTML = `<div class="text-[10px] text-slate-400 mb-1">#${idx+1}</div>
                      <div class="font-bold text-sm truncate">${escapeHtml(it.gift.name)}</div>`;
       d.onclick = () => openEditor(idx);
@@ -525,7 +544,7 @@
     });
   }
 
-  // background
+  // ===== background & fonts =====
   el('bgFile').addEventListener('change', async (e) => {
     const f = e.target.files && e.target.files[0];
     if(!f) return;
@@ -536,7 +555,6 @@
     render();
   });
 
-  // font upload
   const fontSel = el('fontSel');
   el('fontFile').addEventListener('change', async (e) => {
     const f = e.target.files && e.target.files[0];
@@ -556,7 +574,6 @@
     fontSel.value = fam;
     render();
   });
-
   fontSel.addEventListener('change', () => {
     const v = fontSel.value;
     if(v === 'system-ui'){ userFont = null; }
@@ -564,37 +581,33 @@
     render();
   });
 
-  // load sheet
+  // ===== events =====
   el('loadBtn').addEventListener('click', async () => {
     try{
       gifts = await loadSheet(sheetId.value.trim(), gid.value.trim());
       renderGiftList();
     }catch(e){
       console.error(e);
-      alert('読み込みに失敗しました。シェア設定やURL/プロキシを確認してください。\n公開CSVが使えると最も安定します。');
+      alert('読み込みに失敗しました。シェア設定やURL/プロキシを確認してください。\\n公開CSVが使えると最も安定します。');
     }
   });
 
-  // render triggers
-  [cols,rows,tileW,tileH,gap,radius,offX,offY,zoom,refreshBtn,showTextPreview].forEach(elm => {
-    (elm.tagName==='BUTTON' ? elm : elm).addEventListener(elm.tagName==='BUTTON'?'click':'input', () => render());
-  });
+  [cols,rows,tileW,tileH,gap,radius,offX,offY].forEach(x => x.addEventListener('input', () => render()));
+  zoom.addEventListener('input', () => render());
+  refreshBtn.addEventListener('click', () => render());
+  showTextPreview.addEventListener('change', () => render());
 
-  // clear
   el('clearBtn').addEventListener('click', () => {
-    picked = [];
-    renderPickedBar(); slotEditorWrap.classList.add('hidden'); editingIndex=-1; render();
+    picked = []; editingIndex=-1;
+    slotEditorWrap.classList.add('hidden');
+    renderPickedBar(); render();
   });
 
-  // save PNG
   el('saveBtn').addEventListener('click', async () => {
     const {W,H} = gridSize();
     let expW = W, expH = H;
     if(bgImg){ expW = bgImg.width; expH = bgImg.height; }
-    else {
-      expW = 1080;
-      expH = Math.round(1080 * (H/W));
-    }
+    else { expW = 1080; expH = Math.round(1080 * (H/W)); }
     exportCanvas.width = expW; exportCanvas.height = expH;
     const ctx = exportCanvas.getContext('2d');
     ctx.fillStyle='#0b1320'; ctx.fillRect(0,0,expW,expH);
@@ -602,14 +615,15 @@
     ctx.save();
     ctx.scale(s, s);
     if(bgImg){ ctx.drawImage(bgImg, 0,0, W,H); }
+
     const COLS = px(cols.value), TW = px(tileW.value), TH = px(tileH.value), GAP = px(gap.value);
     for(let i=0;i<Math.min(picked.length, COLS*px(rows.value)); i++){
       const r = Math.floor(i/COLS), c = i%COLS;
       const x = px(offX.value) + GAP + c*(TW+GAP);
       const y = px(offY.value) + GAP + r*(TH+GAP);
-
       const it = picked[i];
       if(!it) continue;
+
       try{
         const bmp = await fetchImageBitmap(it.gift.imageUrl, proxy.value.trim());
         const scalePct = (Number(it.iconScale)||100)/100;
@@ -663,6 +677,7 @@
     }
   });
 
+  // init
   function init(){
     bindEditor();
     render();
@@ -670,6 +685,5 @@
   init();
 })();
 </script>
-
 </body>
 </html>

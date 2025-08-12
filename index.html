@@ -8,9 +8,7 @@
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
   <style>
     html,body{height:100%;}
-    /* hide default file inputs visually */
     input[type="file"].file-hide{position:absolute;left:-9999px;}
-    .tile-frame{box-shadow:inset 0 0 0 2px rgba(255,255,255,.06), inset 0 0 24px rgba(0,0,0,.6);}
     .scrollbar::-webkit-scrollbar{height:10px;width:10px}
     .scrollbar::-webkit-scrollbar-thumb{background:#2b3446;border-radius:6px}
     .scrollbar::-webkit-scrollbar-track{background:#0e1420}
@@ -23,31 +21,31 @@
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 items-end">
       <div class="lg:col-span-3">
         <label class="block text-xs text-slate-400">Sheet ID</label>
-        <input id="sheetId" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" placeholder="スプレッドシートのID">
+        <input id="sheetId" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" placeholder="スプレッドシートのID" />
       </div>
       <div class="lg:col-span-2">
         <label class="block text-xs text-slate-400">gid</label>
-        <input id="gid" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" placeholder="シートのgid">
+        <input id="gid" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" placeholder="シートのgid" />
       </div>
       <div class="lg:col-span-4">
-        <label class="block text-xs text-slate-400">（任意）CSV直リンク（ウェブに公開のCSV URL を貼付）</label>
-        <input id="csvUrl" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" placeholder="https://docs.google.com/spreadsheets/d/e/.../pub?gid=...&single=true&output=csv">
+        <label class="block text-xs text-slate-400">（任意）CSV直リンク（公開CSV URL）</label>
+        <input id="csvUrl" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" placeholder="https://docs.google.com/spreadsheets/d/e/.../pub?gid=...&single=true&output=csv" />
       </div>
       <div class="lg:col-span-3">
         <label class="block text-xs text-slate-400">CORSプロキシURL（任意）</label>
-        <input id="proxy" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" placeholder="https://api.allorigins.win/raw?url=">
+        <input id="proxy" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" placeholder="https://api.allorigins.win/raw?url=" />
       </div>
 
       <div class="lg:col-span-2 flex gap-2">
         <button id="loadBtn" class="px-4 py-2 rounded bg-sky-500 text-slate-900 font-bold">読み込む</button>
         <label class="relative px-4 py-2 rounded bg-slate-700 cursor-pointer">
-          <input id="bgFile" type="file" accept="image/*" class="file-hide">
+          <input id="bgFile" type="file" accept="image/*" class="file-hide" />
           <span>背景画像を選ぶ</span>
         </label>
       </div>
       <div class="lg:col-span-2 flex gap-2">
         <label class="relative px-4 py-2 rounded bg-slate-700 cursor-pointer">
-          <input id="fontFile" type="file" accept=".ttf,.otf,.woff,.woff2" class="file-hide">
+          <input id="fontFile" type="file" accept=".ttf,.otf,.woff,.woff2" class="file-hide" />
           <span>フォントを追加</span>
         </label>
         <select id="fontSel" class="px-3 py-2 rounded bg-slate-800 border border-slate-700">
@@ -65,19 +63,19 @@
       <div class="xl:col-span-7 space-y-3">
         <!-- knobs -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div><label class="text-xs text-slate-400">列(COLS)</label><input id="cols" type="number" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" value="6"></div>
-          <div><label class="text-xs text-slate-400">行(ROWS)</label><input id="rows" type="number" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" value="3"></div>
-          <div><label class="text-xs text-slate-400">枠幅 TILE_W</label><input id="tileW" type="number" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" value="320"></div>
-          <div><label class="text-xs text-slate-400">枠高 TILE_H</label><input id="tileH" type="number" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" value="180"></div>
-          <div><label class="text-xs text-slate-400">枠間 GAP</label><input id="gap" type="number" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" value="20"></div>
-          <div><label class="text-xs text-slate-400">角丸 px</label><input id="radius" type="number" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" value="18"></div>
-          <div><label class="text-xs text-slate-400">左上オフセットX</label><input id="offX" type="number" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" value="0"></div>
-          <div><label class="text-xs text-slate-400">左上オフセットY</label><input id="offY" type="number" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" value="0"></div>
+          <div><label class="text-xs text-slate-400">列(COLS)</label><input id="cols" type="number" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" value="6" /></div>
+          <div><label class="text-xs text-slate-400">行(ROWS)</label><input id="rows" type="number" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" value="3" /></div>
+          <div><label class="text-xs text-slate-400">枠幅 TILE_W</label><input id="tileW" type="number" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" value="320" /></div>
+          <div><label class="text-xs text-slate-400">枠高 TILE_H</label><input id="tileH" type="number" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" value="180" /></div>
+          <div><label class="text-xs text-slate-400">枠間 GAP</label><input id="gap" type="number" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" value="20" /></div>
+          <div><label class="text-xs text-slate-400">角丸 px</label><input id="radius" type="number" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" value="18" /></div>
+          <div><label class="text-xs text-slate-400">左上オフセットX</label><input id="offX" type="number" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" value="0" /></div>
+          <div><label class="text-xs text-slate-400">左上オフセットY</label><input id="offY" type="number" class="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2" value="0" /></div>
         </div>
 
         <div class="flex items-center gap-3">
           <label class="text-xs text-slate-400">ズーム</label>
-          <input id="zoom" type="range" min="50" max="200" value="100" class="w-64">
+          <input id="zoom" type="range" min="50" max="200" value="100" class="w-64" />
           <button id="refreshBtn" class="px-3 py-1 bg-slate-700 rounded">更新</button>
           <label class="text-xs flex items-center gap-2"><input id="showTextPreview" type="checkbox" class="scale-125" /> プレビューでテキスト表示</label>
         </div>
@@ -114,32 +112,32 @@
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="text-xs text-slate-400">テキスト</label>
-              <input id="edText" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1" placeholder="スロットの見出し（任意）">
+              <input id="edText" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1" placeholder="スロットの見出し（任意）" />
             </div>
             <div class="grid grid-cols-2 gap-2">
-              <div><label class="text-xs text-slate-400">文字サイズ(px)</label><input id="edTextSize" type="number" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1" value="86"></div>
-              <div><label class="text-xs text-slate-400">文字色</label><input id="edColor" type="color" class="w-full h-10 bg-slate-900 border border-slate-700 rounded" value="#ffffff"></div>
+              <div><label class="text-xs text-slate-400">文字サイズ(px)</label><input id="edTextSize" type="number" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1" value="86" /></div>
+              <div><label class="text-xs text-slate-400">文字色</label><input id="edColor" type="color" class="w-full h-10 bg-slate-900 border border-slate-700 rounded" value="#ffffff" /></div>
             </div>
             <div class="grid grid-cols-2 gap-2">
-              <div><label class="text-xs text-slate-400">文字Xオフ</label><input id="edTextX" type="number" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1" value="0"></div>
-              <div><label class="text-xs text-slate-400">文字Yオフ</label><input id="edTextY" type="number" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1" value="0"></div>
+              <div><label class="text-xs text-slate-400">文字Xオフ</label><input id="edTextX" type="number" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1" value="0" /></div>
+              <div><label class="text-xs text-slate-400">文字Yオフ</label><input id="edTextY" type="number" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1" value="0" /></div>
             </div>
             <div class="grid grid-cols-3 gap-2 items-end">
-              <div><label class="text-xs text-slate-400">アイコン倍率(%)</label><input id="edIconScale" type="number" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1" value="100"></div>
-              <div><label class="text-xs text-slate-400">アイコンX</label><input id="edIconX" type="number" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1" value="0"></div>
-              <div><label class="text-xs text-slate-400">アイコンY</label><input id="edIconY" type="number" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1" value="0"></div>
+              <div><label class="text-xs text-slate-400">アイコン倍率(%)</label><input id="edIconScale" type="number" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1" value="100" /></div>
+              <div><label class="text-xs text-slate-400">アイコンX</label><input id="edIconX" type="number" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1" value="0" /></div>
+              <div><label class="text-xs text-slate-400">アイコンY</label><input id="edIconY" type="number" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1" value="0" /></div>
             </div>
             <div class="col-span-2 grid grid-cols-4 gap-2 items-end">
               <label class="relative px-3 py-2 rounded bg-slate-700 cursor-pointer text-center">
-                <input id="edOverlayFile" type="file" accept="image/*" class="file-hide">
+                <input id="edOverlayFile" type="file" accept="image/*" class="file-hide" />
                 <span>追加画像を選択</span>
               </label>
-              <div><label class="text-xs text-slate-400">追加倍率(%)</label><input id="edOvScale" type="number" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1" value="100"></div>
-              <div><label class="text-xs text-slate-400">追加X</label><input id="edOvX" type="number" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1" value="0"></div>
-              <div><label class="text-xs text-slate-400">追加Y</label><input id="edOvY" type="number" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1" value="0"></div>
+              <div><label class="text-xs text-slate-400">追加倍率(%)</label><input id="edOvScale" type="number" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1" value="100" /></div>
+              <div><label class="text-xs text-slate-400">追加X</label><input id="edOvX" type="number" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1" value="0" /></div>
+              <div><label class="text-xs text-slate-400">追加Y</label><input id="edOvY" type="number" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1" value="0" /></div>
             </div>
             <div class="col-span-2 flex gap-2">
-              <label class="text-xs flex items-center gap-2"><input id="edTextPreview" type="checkbox" class="scale-125"> プレビューでテキスト表示</label>
+              <label class="text-xs flex items-center gap-2"><input id="edTextPreview" type="checkbox" class="scale-125" /> プレビューでテキスト表示</label>
               <button id="edDelete" class="ml-auto px-3 py-2 bg-rose-500 text-slate-900 rounded">このスロットを削除</button>
             </div>
           </div>
@@ -156,14 +154,14 @@
   // ====== constants & state ======
   const DEFAULT_SHEET = "15QtBjbdETvUNL64JF46MvTvkfXaZI_jAtTphKQH6Y5U";
   const DEFAULT_GID   = "1487601753";
-  const DEFAULT_PROXY = "https://api.allorigins.win/raw?url="; // デフォ。失敗時は他にフォールバック
-  const PREVIEW_BASE_W = 1080; // 1080幅に収まるようスケール
+  const DEFAULT_PROXY = "https://api.allorigins.win/raw?url=";
+  const PREVIEW_BASE_W = 1080;
 
-  const imageCache = new Map(); // url -> Promise<ImageBitmap>
-  let gifts = [];               // マスター一覧
-  let picked = [];              // {gift, text, textSize, color, textX, textY, iconScale, iconX, iconY, overlay:{blobUrl,scale,x,y}, showTextPreview}
-  let bgImg = null;             // ImageBitmap
-  let userFont = null;          // {name, url}
+  const imageCache = new Map();
+  let gifts = [];
+  let picked = [];
+  let bgImg = null;
+  let userFont = null;
 
   // ====== DOM ======
   const el = (id) => document.getElementById(id);
@@ -187,7 +185,6 @@
   proxy.value = DEFAULT_PROXY;
 
   // ====== utils ======
-  // robust CSV parser (no regex, ignores BOM/zero-width chars)
   function csvToRows(csvText){
     const rows=[]; let i=0, cell='', row=[], inQ=false;
     while(i<csvText.length){
@@ -201,8 +198,8 @@
       }
       if(ch === '"'){ inQ=true; i++; continue; }
       if(ch === ','){ row.push(cell); cell=''; i++; continue; }
-      if(ch === '\\n'){ row.push(cell); rows.push(row); cell=''; row=[]; i++; continue; }
-      if(ch === '\\r'){ i++; continue; }
+      if(ch === '\n'){ row.push(cell); rows.push(row); cell=''; row=[]; i++; continue; }
+      if(ch === '\r'){ i++; continue; }
       const code = ch.charCodeAt(0);
       if(code===0xFEFF || code===0x200B || code===0x200C || code===0x200D){ i++; continue; }
       cell += ch; i++;
@@ -211,7 +208,6 @@
     return rows;
   }
 
-  // peel =HYPERLINK("URL","text")
   function peelHyperlinkCell(s){
     if(!s) return '';
     s = String(s).trim();
@@ -235,8 +231,7 @@
   async function fetchTextWithProxies(url, userProxy){
     const cands = [];
     if(userProxy) cands.push(userProxy + encodeURIComponent(url));
-    cands.push(url); // try direct
-    // fallbacks
+    cands.push(url);
     cands.push('https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url));
     cands.push('https://cors.isomorphic-git.org/' + url);
 
@@ -245,7 +240,7 @@
         const r = await fetch(u, {cache:'no-store'});
         if(!r.ok) continue;
         return await r.text();
-      }catch(e){ /* next */ }
+      }catch(e){}
     }
     throw new Error('fetch failed');
   }
@@ -291,7 +286,7 @@
           const b = await r.blob();
           if(!(b.type||'').startsWith('image/')) continue;
           return await createImageBitmap(b);
-        }catch(e){ /* next */ }
+        }catch(e){}
       }
       throw new Error('画像取得失敗: '+url);
     })();
@@ -301,7 +296,6 @@
 
   function px(n){ return Number(n||0) || 0; }
 
-  // rounded rect path
   function rrect(ctx, x,y,w,h,r){
     r = Math.min(r, w/2, h/2);
     ctx.beginPath();
@@ -339,30 +333,25 @@
   async function render(toExport=false){
     const ctx = preview.getContext('2d');
     const {W,H} = gridSize();
-    // preview size scaled to 1080 width
     const scale = PREVIEW_BASE_W / W;
     const viewW = Math.round(W * scale * (px(zoom.value)/100));
     const viewH = Math.round(H * scale * (px(zoom.value)/100));
     preview.width = viewW;
     preview.height = viewH;
 
-    // internal canvas for drawing at native grid size, then scale -> preview
     const buf = document.createElement('canvas');
     buf.width = W; buf.height = H;
     const bctx = buf.getContext('2d');
     bctx.fillStyle = '#0b1320';
     bctx.fillRect(0,0,W,H);
 
-    // background (only in preview)
     if(bgImg){
       bctx.drawImage(bgImg, 0, 0, W, H);
     }
 
-    // guide
     drawGuide(bctx, px(offX.value), px(offY.value));
 
-    // draw items
-    const COLS = px(cols.value), TW = px(tileW.value), TH = px(tileH.value), GAP = px(gap.value), R = px(radius.value);
+    const COLS = px(cols.value), TW = px(tileW.value), TH = px(tileH.value), GAP = px(gap.value);
 
     for(let i=0;i<Math.min(picked.length, COLS*px(rows.value)); i++){
       const r = Math.floor(i/COLS), c = i%COLS;
@@ -372,20 +361,17 @@
       const it = picked[i];
       if(!it) continue;
 
-      // base icon
       try{
         const bmp = await fetchImageBitmap(it.gift.imageUrl, proxy.value.trim());
         const scalePct = (Number(it.iconScale)||100)/100;
-        // fit keeping aspect: max area inside tile minus padding 16
         const maxW = TW - 16, maxH = TH - 16;
         const ratio = Math.min(maxW/bmp.width, maxH/bmp.height) * scalePct;
         const iw = bmp.width * ratio, ih = bmp.height * ratio;
         const ix = x + (TW - iw)/2 + px(it.iconX);
         const iy = y + (TH - ih)/2 + px(it.iconY);
         bctx.drawImage(bmp, ix, iy, iw, ih);
-      }catch(e){ /* ignore */ }
+      }catch(e){}
 
-      // overlay
       if(it.overlay && it.overlay.url){
         try{
           const img = await (async () => {
@@ -399,10 +385,9 @@
           const ix = x + (TW - iw)/2 + px(it.overlay.x);
           const iy = y + (TH - ih)/2 + px(it.overlay.y);
           bctx.drawImage(img, ix, iy, iw, ih);
-        }catch(e){ /* ignore */ }
+        }catch(e){}
       }
 
-      // text (preview optional)
       if( (toExport || showTextPreview.checked || it.showTextPreview) && it.text ){
         bctx.save();
         bctx.fillStyle = it.color || '#ffffff';
@@ -419,7 +404,6 @@
       }
     }
 
-    // blit to preview
     ctx.imageSmoothingEnabled = true;
     ctx.clearRect(0,0,preview.width,preview.height);
     ctx.drawImage(buf, 0, 0, preview.width, preview.height);
@@ -458,7 +442,6 @@
       d.onclick = () => openEditor(idx);
       pickedBar.appendChild(d);
     });
-    // sortable
     Sortable.create(pickedBar, {
       animation: 150,
       onEnd: (evt) => {
@@ -566,7 +549,6 @@
     style.textContent = `@font-face{ font-family:${fam}; src:url(${url}); font-display:swap; }`;
     document.head.appendChild(style);
     userFont = {name:fam, url};
-    // add option
     const opt = document.createElement('option');
     opt.value = fam; opt.textContent = f.name || fam;
     fontSel.appendChild(opt);
@@ -588,7 +570,7 @@
       renderGiftList();
     }catch(e){
       console.error(e);
-      alert('読み込みに失敗しました。シェア設定やURL/プロキシを確認してください。\\n公開CSVが使えると最も安定します。');
+      alert('読み込みに失敗しました。シェア設定やURL/プロキシを確認してください。\n公開CSVが使えると最も安定します。');
     }
   });
 
@@ -605,7 +587,6 @@
 
   // save PNG
   el('saveBtn').addEventListener('click', async () => {
-    // export canvas size = background size if set, else 1080 width scaled to grid
     const {W,H} = gridSize();
     let expW = W, expH = H;
     if(bgImg){ expW = bgImg.width; expH = bgImg.height; }
@@ -616,14 +597,10 @@
     exportCanvas.width = expW; exportCanvas.height = expH;
     const ctx = exportCanvas.getContext('2d');
     ctx.fillStyle='#0b1320'; ctx.fillRect(0,0,expW,expH);
-    // scale to grid
     const s = expW / W;
     ctx.save();
     ctx.scale(s, s);
-    // background
     if(bgImg){ ctx.drawImage(bgImg, 0,0, W,H); }
-    // draw guides? no (exportはガイド非表示)
-    // draw items (export mode forces text on)
     const COLS = px(cols.value), TW = px(tileW.value), TH = px(tileH.value), GAP = px(gap.value);
     for(let i=0;i<Math.min(picked.length, COLS*px(rows.value)); i++){
       const r = Math.floor(i/COLS), c = i%COLS;

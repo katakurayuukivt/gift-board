@@ -137,7 +137,7 @@ canvas{max-width:100%;max-height:100%}
 <script>
 (() => {
   // ======= Const & State =======
-  const DEFAULT_PROXY = "https://api.allorigins.win/raw?url=";
+  const DEFAULT_PROXY = "https://r.jina.ai/http://";
   const FIXED_SHEET_ID = "15QtBjbdETvUNL64JF46MvTvkfXaZI_jAtTphKQH6Y5U";
   const FIXED_GID = "1487601753";
 
@@ -352,25 +352,60 @@ canvas{max-width:100%;max-height:100%}
     }
   }
   async function loadSheet(sheetId, gid){
-    const base  = 'https://docs.google.com/spreadsheets/d/' + sheetId + '/export?format=csv&gid=' + gid;
-    const proxy = (elProxy.value || DEFAULT_PROXY).trim();
-    const url = proxy.includes('url=') ? (proxy + encodeURIComponent(base)) : (proxy + base);
-    const res = await fetch(url, {cache:'no-store'});
-    if(!res.ok) throw new Error('シート取得に失敗（CORS/権限/URL）');
-    const text = await res.text();
-    const rows = csvToRows(text);
-    if(!rows.length) return [];
-    const header = rows[0].map(h=>h.trim());
-    const map = Object.fromEntries(header.map((h,i)=>[h,i]));
-    const list = rows.slice(1).map(r=>{
-      const id = r[map['Gift ID']]||'';
-      const name = r[map['Gift Name']]||'';
-      const cost = Number(r[map['Gift Cost']]||0);
-      let imageUrl = r[map['Gift Image URL']]||'';
-      imageUrl = extractHyperlink(imageUrl);
-      return {id,name,cost,imageUrl};
-    }).filter(g=>g.id && g.name && g.imageUrl);
-    return list;
+    const baseHttps = 'https://docs.google.com/spreadsheets/d/' + sheetId + '/export?format=csv&gid=' + gid;
+    const baseHttp  = 'http://docs.google.com/spreadsheets/d/' + sheetId + '/export?format=csv&gid=' + gid;
+    const userProxy = (elProxy.value || DEFAULT_PROXY).trim();
+
+    const candidates = [];
+
+    // 1) User-specified proxy
+    if (userProxy) {
+      if (userProxy.includes('url=')) candidates.push(userProxy + encodeURIComponent(baseHttps));
+      else candidates.push(userProxy + baseHttps);
+    }
+
+    // 2) r.jina.ai (CORS-open text fetcher)
+    candidates.push('https://r.jina.ai/http://docs.google.com/spreadsheets/d/' + sheetId + '/export?format=csv&gid=' + gid);
+
+    // 3) thingproxy
+    candidates.push('https://thingproxy.freeboard.io/fetch/' + baseHttps);
+
+    // 4) direct (may be blocked, but keep for extension contexts)
+    candidates.push(baseHttps);
+
+    // 5) same-origin fallback file (for GitHub Pages + Actions cron)
+    candidates.push('data.csv');
+
+    let lastErr = null;
+    for (const url of candidates) {
+      try {
+        const res = await fetch(url, { cache: 'no-store' });
+        if (!res.ok) continue;
+        const text = await res.text();
+
+        // Basic sanity check to avoid HTML error pages
+        if (!text || /^\s*<!doctype/i.test(text) || /^\s*<html/i.test(text)) continue;
+
+        const rows = csvToRows(text);
+        if(!rows.length) continue;
+
+        const header = rows[0].map(h=>h.trim());
+        const map = Object.fromEntries(header.map((h,i)=>[h,i]));
+        const list = rows.slice(1).map(r=>{
+          const id = r[map['Gift ID']]||'';
+          const name = r[map['Gift Name']]||'';
+          const cost = Number(r[map['Gift Cost']]||0);
+          let imageUrl = r[map['Gift Image URL']]||'';
+          imageUrl = extractHyperlink(imageUrl);
+          return {id,name,cost,imageUrl};
+        }).filter(g=>g.id && g.name && g.imageUrl);
+
+        if (list.length) return list;
+      } catch(e) {
+        lastErr = e;
+      }
+    }
+    throw new Error('シート取得に失敗（CORS/権限/URL）。プロキシを変更するか、同一オリジンの data.csv を用意してください。');
   }
 
   // ======= Render: List & Slots =======

@@ -561,7 +561,7 @@
     const fam = 'user-font-'+Date.now();
     const face = new FontFace(fam, `url(${url})`);
     await face.load();
-    (document as any).fonts ? document.fonts.add(face) : null;
+    if (document.fonts && document.fonts.add) { document.fonts.add(face); }
     const style = document.createElement('style');
     style.textContent = `@font-face{ font-family:${fam}; src:url(${url}); font-display:swap; }`;
     document.head.appendChild(style);

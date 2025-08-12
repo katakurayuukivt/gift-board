@@ -1,709 +1,751 @@
 <!doctype html>
 <html lang="ja">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Gift Board Generator</title>
-<link rel="icon" href="data:,">
-<style>
-:root{--bg:#0e1218;--card:#161b24;--muted:#94a3b8;--accent:#60a5fa;--edge:#263044;}
-*{box-sizing:border-box}
-html,body{height:100%}
-body{margin:0;background:var(--bg);color:#e5e7eb;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif}
-button,input,select{font:inherit}
-.container{display:grid;grid-template-columns:1fr 360px;gap:16px;padding:16px}
-@media (max-width:1100px){.container{grid-template-columns:1fr}}
-.panel{background:var(--card);border:1px solid var(--edge);border-radius:14px;padding:12px}
-.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.row .grow{flex:1}
-label{font-size:12px;color:var(--muted)}
-input[type="text"],input[type="number"],select{width:100%;background:#0b0f15;color:#fff;border:1px solid #2a3140;border-radius:8px;padding:8px 10px;min-width:0}
-button{background:#243246;border:1px solid #2a3140;color:#e5e7eb;padding:10px 14px;border-radius:10px;cursor:pointer}
-button.primary{background:var(--accent);color:#0b1020;border:none;font-weight:700}
-button.ghost{background:transparent;border-color:#334155}
-.btnsm{padding:6px 10px;border-radius:8px}
-.title{font-weight:800;margin:2px 0 10px;font-size:16px}
-.note{font-size:12px;color:var(--muted)}
-hr{border:none;border-top:1px solid #1f2937;margin:12px 0}
-/* gift list */
-.list{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-height:64vh;overflow:auto}
-.item{background:#0f1623;border:1px solid #2f3a4f;padding:12px;border-radius:12px;text-align:left}
-.item .name{font-weight:800}
-.item .muted{color:#cbd5e1;font-size:13px;margin-top:4px}
-/* slots */
-.slots{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.slot{background:#121722;border:1px solid #2e3747;border-radius:14px;padding:10px}
-.cap{font-size:12px;color:var(--muted);margin-bottom:6px}
-.name{font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.compact{display:flex;align-items:center;gap:10px;justify-content:space-between}
-.badge{font-size:12px;color:#cbd5e1;margin-left:6px}
-.ctrl{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:8px}
-.ctrl3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
-.rowmid{display:flex;gap:8px;align-items:center}
-.rem{color:#f87171;cursor:pointer;font-size:12px}
-/* canvas area */
-.canvaswrap{position:relative;background:#0b0f15;border:1px solid #2a3140;border-radius:12px;height:520px;display:flex;align-items:center;justify-content:center;overflow:hidden}
-canvas{max-width:100%;max-height:100%}
-.ctrlbar{display:flex;align-items:center;gap:10px}
-.range{width:220px}
-.small{font-size:12px;color:#cbd5e1}
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gift Board Generator (Tailwind + DnD)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+  <style>
+    :root {
+      --bg: #0e1218;
+      --panel: #121722;
+      --card: #161b24;
+      --muted: #9aa5b1;
+      --accent: #60a5fa;
+    }
+    html, body { background: var(--bg); color: #e5e7eb; }
+    .shadow-soft { box-shadow: 0 6px 24px rgba(0,0,0,.35); }
+    .tw-card { background: var(--panel); border:1px solid #263044; border-radius:16px; }
+    .tw-btn { background: var(--accent); color:#0b1020; font-weight:700; }
+    .field { background:#0b0d11; border:1px solid #2a3140; border-radius:10px; padding:8px 10px; }
+    .chip  { background:#0f1623; border:1px solid #2f3a4f; border-radius:12px; padding:6px 10px; }
+    .muted { color: var(--muted); }
+    .sticky-preview { position: sticky; top: 0; z-index: 40; background: var(--bg); padding-top: 8px; }
+    .scrollbar::-webkit-scrollbar { height: 10px; width: 10px; }
+    .scrollbar::-webkit-scrollbar-thumb { background:#223048; border-radius:10px; }
+    .slot-card { min-width: 360px; max-width: 360px; }
+    .dot { width:10px; height:10px; border-radius:9999px; background: #334155; display:inline-block; }
+    .grid-cell {
+      background: rgba(255,255,255,.02);
+      border: 1px solid rgba(255,255,255,.06);
+      border-radius: 14px;
+    }
+  </style>
 </head>
-<body>
-<div class="container">
+<body class="min-h-screen">
 
-  <section class="panel">
-    <div class="title">ライブプレビュー</div>
-
-    <div class="row">
-      <div class="grow">
-        <label>Sheet ID / gid（固定）</label>
-        <div class="row">
-          <input id="sheetId" class="grow" type="text" readonly>
-          <input id="gid" style="width:130px" type="text" readonly>
-        </div>
+  <!-- Header -->
+  <header class="px-4 py-3 border-b border-slate-800 sticky top-0 z-50 bg-[var(--bg)]">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-end gap-3">
+      <div>
+        <div class="text-sm text-slate-400">Sheet ID（固定）</div>
+        <input id="sheetId" class="field w-72" value="15QtBjbdETvUNL64JF46MvTvkfXaZI_jAtTphKQH6Y5U">
       </div>
       <div>
-        <label>（任意）CORSプロキシURL</label>
-        <input id="proxy" type="text" value="https://api.allorigins.win/raw?url=" placeholder="https://your-proxy.example.com/?url=">
+        <div class="text-sm text-slate-400">gid（固定）</div>
+        <input id="gid" class="field w-40" value="1487601753">
       </div>
-      <div style="align-self:end"><button id="loadBtn" class="primary">読み込む</button></div>
-      <div style="align-self:end"><button id="bgBtn">背景画像を選ぶ</button><input id="bgFile" type="file" accept="image/*" style="display:none"></div>
+      <div class="grow"></div>
+      <div>
+        <div class="text-sm text-slate-400">CORSプロキシ（任意 / 画像＆CSV）</div>
+        <input id="proxy" class="field w-[28rem]" placeholder="https://api.allorigins.win/raw?url=" value="https://api.allorigins.win/raw?url=">
+      </div>
+      <button id="loadBtn" class="tw-btn px-4 py-2 rounded-xl shadow-soft">読み込む</button>
+      <input id="bgFile" type="file" accept="image/*" class="hidden">
+      <button id="bgBtn" class="px-4 py-2 rounded-xl bg-slate-700 hover:bg-slate-600">背景画像を選ぶ</button>
+      <button id="saveBtn" class="tw-btn px-4 py-2 rounded-xl shadow-soft">PNGとして保存</button>
+    </div>
+  </header>
 
-      <div style="align-self:end">
-        <button id="fontBtn">フォントを選ぶ</button>
-        <input id="fontFile" type="file" accept=".ttf,.otf,.woff,.woff2" style="display:none">
-        <div class="small">使用中: <span id="fontName">System UI</span></div>
+  <main class="max-w-7xl mx-auto p-4">
+    <!-- Controls + Preview -->
+    <section class="tw-card p-4 mb-4">
+      <div class="grid grid-cols-12 gap-4">
+        <div class="col-span-12 xl:col-span-8">
+          <div class="sticky-preview">
+            <div class="flex items-center justify-between mb-2">
+              <div class="font-bold">ライブプレビュー</div>
+              <div class="flex items-center gap-3">
+                <label class="chip flex items-center gap-2"><span class="muted text-sm">ズーム</span>
+                  <input id="zoom" type="range" min="50" max="200" value="100" class="w-40">
+                  <span id="zoomLabel" class="text-sm">100%</span>
+                </label>
+                <label class="chip flex items-center gap-2"><span class="muted text-sm">ガイド枠</span>
+                  <select id="guide" class="field py-1 text-sm">
+                    <option value="on" selected>ON</option>
+                    <option value="off">OFF</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+            <canvas id="preview" class="w-full rounded-xl border border-slate-800 shadow-soft bg-[var(--card)]"></canvas>
+          </div>
+        </div>
+
+        <div class="col-span-12 xl:col-span-4 space-y-3">
+          <div class="font-bold">レイアウト設定</div>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="text-sm muted">列 (COLS)<input id="cols" class="field w-full" type="number" value="6"></label>
+            <label class="text-sm muted">行 (ROWS)<input id="rows" class="field w-full" type="number" value="3"></label>
+            <label class="text-sm muted">枠幅 TILE_W<input id="tileW" class="field w-full" type="number" value="320"></label>
+            <label class="text-sm muted">枠高 TILE_H<input id="tileH" class="field w-full" type="number" value="180"></label>
+            <label class="text-sm muted">枠間 GAP<input id="gap" class="field w-full" type="number" value="20"></label>
+            <label class="text-sm muted">角丸 px<input id="radius" class="field w-full" type="number" value="18"></label>
+            <label class="text-sm muted">上オフセット X<input id="offX" class="field w-full" type="number" value="0"></label>
+            <label class="text-sm muted">上オフセット Y<input id="offY" class="field w-full" type="number" value="0"></label>
+            <label class="text-sm muted">アイコン余白 px<input id="pad" class="field w-full" type="number" value="14"></label>
+            <label class="text-sm muted">アイコン倍率 %<input id="iconScale" type="range" min="50" max="140" value="100" class="w-full"></label>
+          </div>
+
+          <div class="font-bold mt-4">テキスト（全体のデフォルト）</div>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="text-sm muted col-span-2">内容<input id="globalText" class="field w-full" placeholder="例）テスト"></label>
+            <label class="text-sm muted">サイズ px<input id="globalTextSize" type="number" class="field w-full" value="86"></label>
+            <label class="text-sm muted">位置
+              <select id="globalTextPos" class="field w-full">
+                <option value="top-left">左上</option>
+                <option value="top">中央上</option>
+                <option value="top-right">右上</option>
+                <option value="left">中央左</option>
+                <option value="center" selected>中央</option>
+                <option value="right">中央右</option>
+                <option value="bottom-left">左下</option>
+                <option value="bottom">中央下</option>
+                <option value="bottom-right">右下</option>
+              </select>
+            </label>
+            <label class="text-sm muted">オフセットX<input id="globalTextDx" type="number" class="field w-full" value="0"></label>
+            <label class="text-sm muted">オフセットY<input id="globalTextDy" type="number" class="field w-full" value="0"></label>
+            <label class="text-sm muted">色<input id="globalColor" type="color" class="field w-full" value="#ffffff"></label>
+            <label class="text-sm muted">フチ（白）<input id="globalStroke" type="checkbox" checked class="ml-2"></label>
+          </div>
+
+          <div class="font-bold mt-4">フォント</div>
+          <div class="flex items-center gap-2">
+            <input id="fontFile" type="file" accept=".ttf,.otf,.woff,.woff2" class="hidden">
+            <button id="fontBtn" class="px-3 py-2 bg-slate-600 rounded-lg hover:bg-slate-500">フォントをアップロード</button>
+            <input id="fontFamily" class="field w-56" placeholder="フォント名（未指定なら system-ui）">
+          </div>
+
+          <div class="text-xs muted mt-3">
+            保存/復元（ブラウザ内）
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="saveCfg" class="px-3 py-2 bg-slate-700 rounded-lg">保存</button>
+            <button id="loadCfg" class="px-3 py-2 bg-slate-700 rounded-lg">復元</button>
+            <button id="resetCfg" class="px-3 py-2 bg-slate-700 rounded-lg">初期化</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Gifts and slots -->
+    <section class="grid grid-cols-12 gap-4">
+      <div class="col-span-12 xl:col-span-4 tw-card p-4">
+        <div class="flex items-center justify-between mb-2">
+          <div class="font-bold">ギフト一覧（クリックで追加）</div>
+          <button id="clearBtn" class="px-3 py-1.5 bg-slate-700 rounded-lg">クリア</button>
+        </div>
+        <div id="giftList" class="grid grid-cols-2 gap-2 max-h-[70vh] overflow-auto pr-1"></div>
+        <div class="text-xs muted mt-2">※ 必要カラム：<b>Gift ID / Gift Name / Gift Cost / Gift Image URL</b></div>
       </div>
 
-      <div style="align-self:end" class="rowmid">
-        <label><input id="exportText" type="checkbox" checked> PNGにテキストを含める</label>
+      <div class="col-span-12 xl:col-span-8 tw-card p-4">
+        <div class="font-bold mb-2">配置中（ドラッグで並べ替え / 最大 任意の行×列）</div>
+        <div id="slotRow" class="flex gap-3 overflow-x-auto scrollbar pb-2"></div>
       </div>
-      <div style="align-self:end"><button id="saveBtn" class="primary">PNGとして保存</button></div>
-    </div>
-
-    <hr>
-
-    <div class="row">
-      <div><label>列 (COLS)</label><input id="cols" type="number" min="1" value="6"></div>
-      <div><label>行 (ROWS)</label><input id="rows" type="number" min="1" value="3"></div>
-      <div><label>枠幅 TILE_W</label><input id="tileW" type="number" min="40" value="320"></div>
-      <div><label>枠高 TILE_H</label><input id="tileH" type="number" min="40" value="180"></div>
-      <div><label>枠間 GAP</label><input id="gap" type="number" min="0" value="20"></div>
-      <div><label>丸角 px</label><input id="radius" type="number" min="0" value="18"></div>
-      <div><label>ガイド枠描画</label><select id="guide"><option>ON</option><option>OFF</option></select></div>
-    </div>
-
-    <div class="row" style="margin-top:8px">
-      <div class="grow"><label>（任意）全体テキスト（未入力なら各スロットのテキストのみ）</label><input id="globalText" type="text" placeholder=""></div>
-      <div><label>文字サイズ px（既定）</label><input id="fontSize" type="number" value="86"></div>
-      <div><label>色（既定）</label><input id="fontColor" type="color" value="#ffffff"></div>
-      <div class="rowmid"><label><input id="fontStroke" type="checkbox" checked> 縁（既定）</label></div>
-      <div><label>横位置（既定）</label>
-        <select id="textAlign"><option value="center">中央</option><option value="left">左</option><option value="right">右</option></select>
-      </div>
-      <div><label>縦位置（既定）</label>
-        <select id="textVAlign"><option value="middle">中央</option><option value="top">上</option><option value="bottom">下</option></select>
-      </div>
-      <div><label>文字オフX（既定）</label><input id="textOffX" type="number" value="0"></div>
-      <div><label>文字オフY（既定）</label><input id="textOffY" type="number" value="0"></div>
-    </div>
-
-    <div class="canvaswrap" id="canvasWrap">
-      <canvas id="preview" width="1080" height="608"></canvas>
-    </div>
-
-    <div class="row ctrlbar" style="margin-top:10px">
-      <span class="small">ズーム</span>
-      <input id="zoom" class="range" type="range" min="50" max="200" value="100">
-      <span class="small" id="zoomVal">100%</span>
-      <button id="updateBtn" class="btnsm">更新</button>
-      <span class="note">※ 生成PNGはテキストも含めます（チェックで切替可）。</span>
-    </div>
-
-  </section>
-
-  <aside class="panel">
-    <div class="title">ギフト一覧（クリックで追加）</div>
-    <div id="list" class="list"></div>
-    <div class="row" style="margin-top:8px"><button id="clearBtn" class="ghost btnsm">クリア</button></div>
-    <hr>
-    <div class="title">配置中（行×列）</div>
-    <div id="slots" class="slots"></div>
-  </aside>
-
-</div>
+    </section>
+  </main>
 
 <script>
 (() => {
-  // ======= Const & State =======
-  const DEFAULT_PROXY = "https://r.jina.ai/http://";
-  const FIXED_SHEET_ID = "15QtBjbdETvUNL64JF46MvTvkfXaZI_jAtTphKQH6Y5U";
-  const FIXED_GID = "1487601753";
+  // ---------- Constants ----------
+  const DEFAULT_SHEET = '15QtBjbdETvUNL64JF46MvTvkfXaZI_jAtTphKQH6Y5U';
+  const DEFAULT_GID   = '1487601753';
+  const CANVAS_WIDTH  = 1080; // always scale preview/export to 1080 width
 
-  const S = {
-    gifts: [],
-    slots: [],
-    bgBitmap: null,
-    canvasW: 1080,
-    canvasH: 608,
-    fontFamily: null // uploaded font family name (null => system-ui)
+  // ---------- State ----------
+  let gifts = [];            // all gifts from sheet
+  let picked = [];           // placed gifts (slots)
+  let bgImg = null;          // background image (HTMLImageElement)
+  let fontLoadedName = '';   // custom font family name (from upload)
+  let layout = {
+    cols: 6, rows: 3, tileW: 320, tileH: 180, gap: 20, radius: 18,
+    offX: 0, offY: 0, pad: 14, iconScale: 100,
+    guide: 'on'
+  };
+  let globalText = {
+    text: '', size: 86, pos: 'center', dx: 0, dy: 0,
+    color: '#ffffff', stroke: true
   };
 
-  // ======= DOM =======
-  const elSheetId = document.getElementById('sheetId');
-  const elGid = document.getElementById('gid');
-  const elProxy = document.getElementById('proxy');
-  const elList = document.getElementById('list');
-  const elSlots = document.getElementById('slots');
-  const elPreview = document.getElementById('preview');
-  const ctx = elPreview.getContext('2d', {alpha:false});
+  // ---------- DOM ----------
+  const el = (id) => document.getElementById(id);
+  const sheetId  = el('sheetId');
+  const gid      = el('gid');
+  const proxy    = el('proxy');
+  const preview  = el('preview');
+  const ctx      = preview.getContext('2d');
+  const giftList = el('giftList');
+  const slotRow  = el('slotRow');
+  const zoom     = el('zoom');
+  const zoomLabel= el('zoomLabel');
 
-  const elCols = document.getElementById('cols');
-  const elRows = document.getElementById('rows');
-  const elTileW = document.getElementById('tileW');
-  const elTileH = document.getElementById('tileH');
-  const elGap   = document.getElementById('gap');
-  const elRadius= document.getElementById('radius');
-  const elGuide = document.getElementById('guide');
+  // Inputs
+  const cols = el('cols'), rows = el('rows'), tileW = el('tileW'), tileH = el('tileH'),
+        gap = el('gap'), radius = el('radius'), offX = el('offX'), offY = el('offY'),
+        pad = el('pad'), iconScale = el('iconScale'), guide = el('guide');
 
-  const elGlobalText = document.getElementById('globalText');
-  const elFontSize = document.getElementById('fontSize');
-  const elFontColor = document.getElementById('fontColor');
-  const elFontStroke = document.getElementById('fontStroke');
-  const elTextAlign = document.getElementById('textAlign');
-  const elTextVAlign = document.getElementById('textVAlign');
-  const elTextOffX = document.getElementById('textOffX');
-  const elTextOffY = document.getElementById('textOffY');
-  const elExportText = document.getElementById('exportText');
+  const globalTextEl = el('globalText'), globalTextSize = el('globalTextSize'),
+        globalTextPos = el('globalTextPos'), globalTextDx = el('globalTextDx'),
+        globalTextDy = el('globalTextDy'), globalColor = el('globalColor'),
+        globalStroke = el('globalStroke');
 
-  const elZoom = document.getElementById('zoom');
-  const elZoomVal = document.getElementById('zoomVal');
-  const elFontBtn = document.getElementById('fontBtn');
-  const elFontFile = document.getElementById('fontFile');
-  const elFontName = document.getElementById('fontName');
+  // ---------- Helpers ----------
+  function saveLocal() {
+    const data = { layout, globalText, picked, sheet: sheetId.value, gid: gid.value };
+    localStorage.setItem('giftboard_v3', JSON.stringify(data));
+  }
+  function loadLocal() {
+    const s = localStorage.getItem('giftboard_v3');
+    if(!s) return;
+    try {
+      const data = JSON.parse(s);
+      if(data.layout) layout = Object.assign(layout, data.layout);
+      if(data.globalText) globalText = Object.assign(globalText, data.globalText);
+      if(Array.isArray(data.picked)) picked = data.picked;
+      sheetId.value = data.sheet || DEFAULT_SHEET;
+      gid.value = data.gid || DEFAULT_GID;
+    }catch{}
+  }
 
-  // Buttons
-  document.getElementById('loadBtn').onclick = onLoadSheet;
-  document.getElementById('clearBtn').onclick = () => { S.slots=[]; renderSlots(); draw(); };
-  document.getElementById('updateBtn').onclick = () => draw();
-  document.getElementById('saveBtn').onclick = () => exportPNG();
-  document.getElementById('bgBtn').onclick = () => document.getElementById('bgFile').click();
-  document.getElementById('bgFile').onchange = onPickBg;
-  elFontBtn.onclick = () => elFontFile.click();
-  elFontFile.onchange = onPickFont;
+  function applyToInputs(){
+    cols.value = layout.cols; rows.value = layout.rows;
+    tileW.value = layout.tileW; tileH.value = layout.tileH;
+    gap.value = layout.gap; radius.value = layout.radius;
+    offX.value = layout.offX; offY.value = layout.offY;
+    pad.value = layout.pad; iconScale.value = layout.iconScale;
+    guide.value = layout.guide;
 
-  // fixed IDs
-  elSheetId.value = FIXED_SHEET_ID;
-  elGid.value = FIXED_GID;
-  if (!elProxy.value) elProxy.value = DEFAULT_PROXY;
+    globalTextEl.value = globalText.text;
+    globalTextSize.value = globalText.size;
+    globalTextPos.value = globalText.pos;
+    globalTextDx.value = globalText.dx;
+    globalTextDy.value = globalText.dy;
+    globalColor.value = globalText.color;
+    globalStroke.checked = !!globalText.stroke;
+  }
 
-  // zoom
-  elZoom.oninput = () => {
-    const v = Number(elZoom.value);
-    elZoomVal.textContent = v + '%';
-    const wrap = document.getElementById('canvasWrap');
-    wrap.style.transform = 'scale(' + (v/100) + ')';
-    wrap.style.transformOrigin = 'left top';
-  };
+  function updateFromInputs(){
+    layout.cols = parseInt(cols.value||6);
+    layout.rows = parseInt(rows.value||3);
+    layout.tileW = parseInt(tileW.value||320);
+    layout.tileH = parseInt(tileH.value||180);
+    layout.gap = parseInt(gap.value||20);
+    layout.radius = parseInt(radius.value||18);
+    layout.offX = parseInt(offX.value||0);
+    layout.offY = parseInt(offY.value||0);
+    layout.pad = parseInt(pad.value||14);
+    layout.iconScale = parseInt(iconScale.value||100);
+    layout.guide = guide.value;
 
-  // ======= Utilities =======
-  function csvToRows(csvText){
+    globalText.text = globalTextEl.value || '';
+    globalText.size = parseInt(globalTextSize.value||86);
+    globalText.pos  = globalTextPos.value;
+    globalText.dx   = parseInt(globalTextDx.value||0);
+    globalText.dy   = parseInt(globalTextDy.value||0);
+    globalText.color= globalColor.value || '#ffffff';
+    globalText.stroke = !!globalStroke.checked;
+  }
+
+  function csvToRows(text){
     const rows=[]; let i=0, cell='', row=[], inQ=false;
-    while(i<csvText.length){
-      const ch = csvText[i];
+    while(i<text.length){
+      const ch = text[i];
       if(inQ){
-        if(ch === '"'){
-          if(csvText[i+1] === '"'){ cell+='"'; i+=2; }
-          else { inQ=false; i++; }
-        } else { cell += ch; i++; }
+        if(ch === '"'){ if(text[i+1] === '"'){ cell+='"'; i+=2; } else { inQ=false; i++; } }
+        else { cell+=ch; i++; }
       }else{
-        if(ch === '"'){ inQ = true; i++; }
+        if(ch === '"'){ inQ=true; i++; }
         else if(ch === ','){ row.push(cell); cell=''; i++; }
         else if(ch === '\n'){ row.push(cell); rows.push(row); cell=''; row=[]; i++; }
         else if(ch === '\r'){ i++; }
-        else { cell += ch; i++; }
+        else { cell+=ch; i++; }
       }
     }
-    if(cell!=='' || row.length){ row.push(cell); rows.push(row); }
+    row.push(cell); rows.push(row);
     return rows;
   }
-  function extractHyperlink(s){
-    if(!s) return s;
-    const t = String(s).trim();
-    if(!t.startsWith('=HYPERLINK(')) return t;
-    const first = t.indexOf('"');
-    if(first < 0) return t;
-    const second = t.indexOf('"', first + 1);
-    if(second < 0) return t;
-    return t.slice(first + 1, second);
+  function extractHyperlinkUrl(s){
+    const str = String(s||'').trim();
+    const m = str.match(/=HYPERLINK\(\s*"([^"]+)"/i);
+    return m ? m[1] : str;
   }
-  async function fetchImageBlobWithFallback(rawUrl){
-    if(!rawUrl) throw new Error('no url');
-    let u = null;
-    try{
-      const s = String(rawUrl).trim().replace(/^\/\//,'https://');
-      u = new URL(s);
-    }catch{}
-    const encHostPath = u ? (u.host + encodeURI(u.pathname) + (u.search||'')) : null;
-    const user = (elProxy.value || DEFAULT_PROXY).trim();
-    const cands = [];
-    if(user){
-      if(user.includes('url=')) cands.push(user + encodeURIComponent(rawUrl));
-      else cands.push(user + rawUrl);
-    }
-    if(encHostPath){
-      cands.push('https://images.weserv.nl/?url=' + encHostPath + '&output=png');
-      cands.push('https://wsrv.nl/?url=' + encHostPath + '&output=png');
-    }
-    cands.push('https://thingproxy.freeboard.io/fetch/' + rawUrl);
-    cands.push(rawUrl);
-    for(const url of cands){
+
+  function candidateCsvUrls(base){
+    const arr = [];
+    const user = (proxy?.value||'').trim();
+    if(user) arr.push(user + encodeURIComponent(base));
+    // thingproxy
+    arr.push('https://thingproxy.freeboard.io/fetch/' + base);
+    // r.jina.ai
+    arr.push('https://r.jina.ai/http/' + base.replace(/^https?:\/\//,'') );
+    // direct
+    arr.push(base);
+    return arr;
+  }
+  async function fetchTextWithFallback(urls){
+    for(const u of urls){
       try{
-        const res = await fetch(url, {cache:'no-store'});
+        const res = await fetch(u, { cache:'no-store' });
         if(!res.ok) continue;
-        const blob = await res.blob();
-        if((blob.type||'').startsWith('image/')) return blob;
+        const t = await res.text();
+        if(t && t.length) return t;
       }catch(e){}
     }
-    throw new Error('画像取得の全てに失敗');
-  }
-  async function blobToBitmap(blob){
-    if('createImageBitmap' in window) return await createImageBitmap(blob);
-    return await new Promise((res,rej)=>{
-      const img = new Image();
-      const url = URL.createObjectURL(blob);
-      img.onload = () => { URL.revokeObjectURL(url); res(img); };
-      img.onerror = rej;
-      img.src = url;
-    });
-  }
-  function gridSize(){
-    const COLS = Number(elCols.value), ROWS=Number(elRows.value);
-    const W = Number(elTileW.value), H=Number(elTileH.value), G=Number(elGap.value);
-    return {cols:COLS,rows:ROWS,tileW:W,tileH:H,gap:G,width:COLS*W+(COLS+1)*G,height:ROWS*H+(ROWS+1)*G};
-  }
-  function centerOffset(canvasW, canvasH, gridW, gridH){
-    return { x: Math.round((canvasW-gridW)/2), y: Math.round((canvasH-gridH)/2) };
-  }
-  function rr(ctx,x,y,w,h,r){
-    ctx.beginPath();
-    ctx.moveTo(x+r,y);
-    ctx.arcTo(x+w,y,x+w,y+h,r);
-    ctx.arcTo(x+w,y+h,x,y+h,r);
-    ctx.arcTo(x,y+h,x,y,r);
-    ctx.arcTo(x,y,x+w,y,r);
-    ctx.closePath();
-  }
-  function currentFontCSS(sizePx){
-    const fam = S.fontFamily ? '\"'+S.fontFamily+'\", system-ui' : 'system-ui';
-    return 'bold ' + sizePx + 'px ' + fam;
-  }
-  function drawSlotText(ctx, slot, x, y, g){
-    const t = (slot.text || elGlobalText.value || '').trim();
-    if(!t) return;
-    const size = slot.textSize || Number(elFontSize.value||86);
-    ctx.font = currentFontCSS(size);
-    ctx.textAlign = slot.textAlign || elTextAlign.value;
-    const vAlign = slot.textVAlign || elTextVAlign.value;
-    ctx.textBaseline = (vAlign==='top'?'top':(vAlign==='bottom'?'bottom':'middle'));
-    const tx = x + g.tileW/2 + (slot.textOffX||0);
-    const ty = y + (vAlign==='top'?12:(vAlign==='bottom'?g.tileH-12:g.tileH/2)) + (slot.textOffY||0);
-    if(slot.textStroke || elFontStroke.checked){
-      ctx.lineJoin='round'; ctx.lineWidth=Math.max(4, Math.floor(size*0.12));
-      ctx.strokeStyle='rgba(0,0,0,0.85)';
-      ctx.strokeText(t, tx, ty);
-    }
-    ctx.fillStyle = slot.textColor || elFontColor.value || '#fff';
-    ctx.fillText(t, tx, ty);
+    throw new Error('fetchTextWithFallback failed');
   }
 
-  // ======= Font Upload =======
-  async function onPickFont(e){
-    const f = e.target.files && e.target.files[0];
-    if(!f) return;
+  function candidateImageUrls(raw){
+    const arr = [];
+    const user = (proxy?.value||'').trim();
+    if(user) arr.push(user + encodeURIComponent(raw));
     try{
-      const ab = await f.arrayBuffer();
-      const blob = new Blob([ab], {type: f.type || 'font/ttf'});
-      const url = URL.createObjectURL(blob);
-      const family = 'UserFont_' + Date.now();
-      const ff = new FontFace(family, 'url('+url+')');
-      await ff.load();
-      document.fonts.add(ff);
-      S.fontFamily = family;
-      elFontName.textContent = f.name;
-      URL.revokeObjectURL(url);
-      draw();
-    }catch(err){
-      console.error(err);
-      alert('フォントの読み込みに失敗しました。別のファイルをお試しください。');
+      const u = new URL(raw);
+      arr.push('https://images.weserv.nl/?url=' + u.host + u.pathname + u.search);
+    }catch{}
+    arr.push('https://thingproxy.freeboard.io/fetch/' + raw);
+    arr.push(raw);
+    return arr;
+  }
+  async function fetchImageBlob(rawUrl){
+    const cand = candidateImageUrls(rawUrl);
+    for(const url of cand){
+      try{
+        const res = await fetch(url, { cache:'no-store' });
+        if(!res.ok) continue;
+        const b = await res.blob();
+        if((b.type||'').startsWith('image/')) return b;
+      }catch(e){}
     }
+    throw new Error('image fetch failed for '+rawUrl);
   }
 
-  // ======= Sheet Load =======
-  async function onLoadSheet(){
-    try{
-      const gifts = await loadSheet(FIXED_SHEET_ID, FIXED_GID);
-      S.gifts = gifts;
-      renderList();
-    }catch(e){
-      console.error(e);
-      alert('シートの読み込みに失敗しました。権限/CORS/URLをご確認ください。');
-    }
-  }
-  async function loadSheet(sheetId, gid){
-    const baseHttps = 'https://docs.google.com/spreadsheets/d/' + sheetId + '/export?format=csv&gid=' + gid;
-    const baseHttp  = 'http://docs.google.com/spreadsheets/d/' + sheetId + '/export?format=csv&gid=' + gid;
-    const userProxy = (elProxy.value || DEFAULT_PROXY).trim();
-
-    const candidates = [];
-
-    // 1) User-specified proxy
-    if (userProxy) {
-      if (userProxy.includes('url=')) candidates.push(userProxy + encodeURIComponent(baseHttps));
-      else candidates.push(userProxy + baseHttps);
-    }
-
-    // 2) r.jina.ai (CORS-open text fetcher)
-    candidates.push('https://r.jina.ai/http://docs.google.com/spreadsheets/d/' + sheetId + '/export?format=csv&gid=' + gid);
-
-    // 3) thingproxy
-    candidates.push('https://thingproxy.freeboard.io/fetch/' + baseHttps);
-
-    // 4) direct (may be blocked, but keep for extension contexts)
-    candidates.push(baseHttps);
-
-    // 5) same-origin fallback file (for GitHub Pages + Actions cron)
-    candidates.push('data.csv');
-
-    let lastErr = null;
-    for (const url of candidates) {
-      try {
-        const res = await fetch(url, { cache: 'no-store' });
-        if (!res.ok) continue;
-        const text = await res.text();
-
-        // Basic sanity check to avoid HTML error pages
-        if (!text || /^\s*<!doctype/i.test(text) || /^\s*<html/i.test(text)) continue;
-
-        const rows = csvToRows(text);
-        if(!rows.length) continue;
-
-        const header = rows[0].map(h=>h.trim());
-        const map = Object.fromEntries(header.map((h,i)=>[h,i]));
-        const list = rows.slice(1).map(r=>{
-          const id = r[map['Gift ID']]||'';
-          const name = r[map['Gift Name']]||'';
-          const cost = Number(r[map['Gift Cost']]||0);
-          let imageUrl = r[map['Gift Image URL']]||'';
-          imageUrl = extractHyperlink(imageUrl);
-          return {id,name,cost,imageUrl};
-        }).filter(g=>g.id && g.name && g.imageUrl);
-
-        if (list.length) return list;
-      } catch(e) {
-        lastErr = e;
-      }
-    }
-    throw new Error('シート取得に失敗（CORS/権限/URL）。プロキシを変更するか、同一オリジンの data.csv を用意してください。');
+  function drawRoundRect(c,x,y,w,h,r){
+    c.beginPath();
+    c.moveTo(x+r,y);
+    c.arcTo(x+w,y,x+w,y+h,r);
+    c.arcTo(x+w,y+h,x,y+h,r);
+    c.arcTo(x,y+h,x,y,r);
+    c.arcTo(x,y,x+w,y,r);
+    c.closePath();
   }
 
-  // ======= Render: List & Slots =======
-  function renderList(){
-    elList.innerHTML='';
-    S.gifts.forEach(g=>{
-      const div = document.createElement('button');
-      div.className='item';
-      div.innerHTML = '<div class="name">'+escapeHtml(g.name)+'</div><div class="muted">🪙 '+g.cost+'</div>';
-      div.onclick = ()=>{
-        const slot = {
-          gift:g,
-          giftScale:100, giftOffX:0, giftOffY:0,
-          overlayFile:null, overlayScale:100, overlayOffX:0, overlayOffY:0, overlayRot:0,
-          text:'', textSize:Number(elFontSize.value||86), textColor:elFontColor.value||'#ffffff',
-          textStroke:!!elFontStroke.checked, textAlign:elTextAlign.value, textVAlign:elTextVAlign.value,
-          textOffX:Number(elTextOffX.value||0), textOffY:Number(elTextOffY.value||0)
-        };
-        S.slots.push(slot);
+  function measureGrid(){
+    const {cols, rows, tileW, tileH, gap} = layout;
+    const gridW = cols*tileW + (cols+1)*gap;
+    const gridH = rows*tileH + (rows+1)*gap;
+    return {gridW, gridH};
+  }
+
+  function posFromAnchor(ax, ay, w, h, sizeW, sizeH){
+    let x=0,y=0;
+    if(ax==='left') x = w*0.0; else if(ax==='center') x = w*0.5; else x = w*1.0;
+    if(ay==='top')  y = h*0.0; else if(ay==='center') y = h*0.5; else y = h*1.0;
+    return {x, y};
+  }
+
+  function anchorToXY(pos){
+    const map = {
+      'top-left':['left','top'], 'top':['center','top'], 'top-right':['right','top'],
+      'left':['left','center'], 'center':['center','center'], 'right':['right','center'],
+      'bottom-left':['left','bottom'], 'bottom':['center','bottom'], 'bottom-right':['right','bottom']
+    };
+    return map[pos]||['center','center'];
+  }
+
+  // ---------- UI rendering ----------
+  function renderGiftList(){
+    giftList.innerHTML = '';
+    for(const g of gifts){
+      const btn = document.createElement('button');
+      btn.className = 'chip text-left hover:bg-slate-700 transition-colors';
+      btn.innerHTML = \`
+        <div class="font-bold text-slate-100">\${escapeHtml(g.name)}</div>
+        <div class="muted text-xs">🪙 \${g.cost}</div>\`;
+      btn.onclick = () => {
+        picked.push({
+          id: g.id, name: g.name, cost: g.cost, imageUrl: g.imageUrl,
+          // per-slot adjustments
+          scale: 100, dx: 0, dy: 0,
+          text: '', textSize: globalText.size, textPos: globalText.pos, textDx: 0, textDy: 0,
+          textColor: globalText.color, textStroke: globalText.stroke,
+          extraUrl: '', extraBlobUrl: '', extraScale: 100, extraDx: 0, extraDy: 0
+        });
         renderSlots(); draw();
       };
-      elList.appendChild(div);
+      giftList.appendChild(btn);
+    }
+  }
+
+  function slotCardTemplate(g, idx){
+    return \`
+    <div class="slot-card tw-card p-3 flex flex-col gap-2" data-idx="\${idx}">
+      <div class="flex items-center justify-between mb-1">
+        <div class="text-slate-300 text-sm">スロット \${idx+1}</div>
+        <button class="text-rose-400 hover:text-rose-300 text-sm" data-act="del">削除</button>
+      </div>
+      <div class="font-bold">\${escapeHtml(g.name)} <span class="muted">/ 🪙\${g.cost}</span></div>
+
+      <label class="text-xs muted">スロットのテキスト
+        <input data-bind="text" class="field w-full" placeholder="任意" value="\${escapeAttr(g.text)}">
+      </label>
+
+      <div class="grid grid-cols-3 gap-2">
+        <label class="text-xs muted">アイコン倍率%
+          <input data-bind="scale" type="number" class="field w-full" value="\${g.scale}" />
+        </label>
+        <label class="text-xs muted">アイコンX
+          <input data-bind="dx" type="number" class="field w-full" value="\${g.dx}" />
+        </label>
+        <label class="text-xs muted">アイコンY
+          <input data-bind="dy" type="number" class="field w-full" value="\${g.dy}" />
+        </label>
+      </div>
+
+      <div class="text-xs muted">追加画像</div>
+      <div class="flex items-center gap-2">
+        <input type="file" data-act="extraFile" accept="image/*" class="hidden">
+        <button class="px-3 py-2 bg-slate-600 rounded-lg hover:bg-slate-500" data-act="extraBtn">ファイルを選択</button>
+        <span class="muted text-xs flex-1 truncate">\${g.extraUrl ? g.extraUrl.split('/').pop() : '選択されていません'}</span>
+      </div>
+      <div class="grid grid-cols-3 gap-2">
+        <label class="text-xs muted">追画像X
+          <input data-bind="extraDx" type="number" class="field w-full" value="\${g.extraDx}" />
+        </label>
+        <label class="text-xs muted">追画像Y
+          <input data-bind="extraDy" type="number" class="field w-full" value="\${g.extraDy}" />
+        </label>
+        <label class="text-xs muted">倍率%
+          <input data-bind="extraScale" type="number" class="field w-full" value="\${g.extraScale}" />
+        </label>
+      </div>
+
+      <div class="grid grid-cols-3 gap-2">
+        <label class="text-xs muted">文字サイズ
+          <input data-bind="textSize" type="number" class="field w-full" value="\${g.textSize}" />
+        </label>
+        <label class="text-xs muted">文字X
+          <input data-bind="textDx" type="number" class="field w-full" value="\${g.textDx}" />
+        </label>
+        <label class="text-xs muted">文字Y
+          <input data-bind="textDy" type="number" class="field w-full" value="\${g.textDy}" />
+        </label>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2">
+        <label class="text-xs muted">文字位置
+          <select data-bind="textPos" class="field w-full">
+            \${['top-left','top','top-right','left','center','right','bottom-left','bottom','bottom-right']
+               .map(v => \`<option value="\${v}" \${g.textPos===v?'selected':''}>\${v}</option>\`).join('')}
+          </select>
+        </label>
+        <label class="text-xs muted">色
+          <input data-bind="textColor" type="color" class="field w-full" value="\${g.textColor}" />
+        </label>
+      </div>
+      <label class="text-xs muted flex items-center gap-2">
+        <input data-bind="textStroke" type="checkbox" \${g.textStroke?'checked':''}> テキストを白フチ
+      </label>
+    </div>\`;
+  }
+
+  function bindSlotCardEvents(card, idx){
+    card.addEventListener('input', (e)=>{
+      const t = e.target;
+      const bind = t.getAttribute('data-bind');
+      if(!bind) return;
+      let v = t.type==='checkbox' ? t.checked : t.value;
+      // number cast
+      if(['scale','dx','dy','extraDx','extraDy','extraScale','textSize','textDx','textDy'].includes(bind)) v = parseInt(v||0);
+      picked[idx][bind] = v;
+      draw(); saveLocal();
+    });
+    card.querySelector('[data-act="del"]').onclick = ()=>{
+      picked.splice(idx,1); renderSlots(); draw(); saveLocal();
+    };
+    const fileInput = card.querySelector('[data-act="extraFile"]');
+    card.querySelector('[data-act="extraBtn"]').onclick = ()=> fileInput.click();
+    fileInput.onchange = (ev)=>{
+      const f = ev.target.files?.[0];
+      if(!f) return;
+      const url = URL.createObjectURL(f);
+      picked[idx].extraUrl = f.name;
+      picked[idx].extraBlobUrl = url;
+      renderSlots(); draw(); saveLocal();
+    };
+  }
+
+  function renderSlots(){
+    slotRow.innerHTML = '';
+    picked.forEach((g, idx)=>{
+      const wrap = document.createElement('div');
+      wrap.innerHTML = slotCardTemplate(g, idx);
+      const card = wrap.firstElementChild;
+      slotRow.appendChild(card);
+      bindSlotCardEvents(card, idx);
+    });
+    // Sortable (drag to reorder cards)
+    Sortable.create(slotRow, {
+      animation: 180,
+      ghostClass: 'opacity-50',
+      onEnd: (evt)=>{
+        const {oldIndex, newIndex} = evt;
+        if(oldIndex===newIndex) return;
+        const moved = picked.splice(oldIndex,1)[0];
+        picked.splice(newIndex,0,moved);
+        renderSlots(); draw(); saveLocal();
+      }
     });
   }
-  function renderSlots(){
-    const g = gridSize();
-    elSlots.style.gridTemplateColumns = 'repeat(' + Math.max(3,g.cols) + ',1fr)';
-    elSlots.innerHTML='';
-    const total = g.cols*g.rows;
-    for(let i=0;i<total;i++){
-      const slot = S.slots[i];
-      const div = document.createElement('div');
-      div.className='slot';
-      div.innerHTML = '<div class="cap">スロット '+(i+1)+'</div>';
-      if(slot){
-        const head = document.createElement('div');
-        head.className='compact';
-        head.innerHTML = '<div class="name">'+escapeHtml(slot.gift.name)+' <span class="badge">/ 🪙'+slot.gift.cost+'</span></div><span class="rem" title="削除">削除</span>';
-        head.querySelector('.rem').onclick = ()=>{ S.slots.splice(i,1); renderSlots(); draw(); };
-        div.appendChild(head);
 
-        const textRow = document.createElement('div');
-        textRow.className='row';
-        textRow.style.marginTop='6px';
-        textRow.innerHTML = '<input type="text" placeholder="スロットのテキスト（任意）" value="'+escapeHtml(slot.text)+'">';
-        textRow.querySelector('input').oninput = (e)=>{ slot.text = e.target.value; draw(); };
-        div.appendChild(textRow);
+  function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
+  function escapeAttr(s){ return String(s||'').replace(/"/g,'&quot;'); }
 
-        const grid1 = document.createElement('div');
-        grid1.className='ctrl3';
-        grid1.innerHTML = ''
-          + '<div><label>アイコン倍率%</label><input type="number" value="'+slot.giftScale+'" min="10" max="300"></div>'
-          + '<div><label>アイコンX</label><input type="number" value="'+slot.giftOffX+'" step="1"></div>'
-          + '<div><label>アイコンY</label><input type="number" value="'+slot.giftOffY+'" step="1"></div>';
-        const [inScale,inGX,inGY] = grid1.querySelectorAll('input');
-        inScale.oninput = e=>{ slot.giftScale=Number(e.target.value||100); draw(); };
-        inGX.oninput = e=>{ slot.giftOffX=Number(e.target.value||0); draw(); };
-        inGY.oninput = e=>{ slot.giftOffY=Number(e.target.value||0); draw(); };
-        div.appendChild(grid1);
+  // ---------- Sheet loading ----------
+  async function loadSheet(sheet, gid){
+    const base = \`https://docs.google.com/spreadsheets/d/\${sheet}/export?format=csv&gid=\${gid}\`;
+    const text = await fetchTextWithFallback(candidateCsvUrls(base));
+    const rows = csvToRows(text);
+    const header = rows[0].map(h=>h.trim());
+    const map = Object.fromEntries(header.map((h,i)=>[h,i]));
+    gifts = rows.slice(1).map(r => ({
+      id: (r[map['Gift ID']]||'').trim(),
+      name: (r[map['Gift Name']]||'').trim(),
+      cost: Number(r[map['Gift Cost']]||0),
+      imageUrl: extractHyperlinkUrl((r[map['Gift Image URL']]||'').trim())
+    })).filter(g => g.id && g.name && g.imageUrl);
+    renderGiftList();
+  }
 
-        const grid2 = document.createElement('div');
-        grid2.className='ctrl3';
-        grid2.innerHTML = ''
-          + '<div><label>追加画像</label><input type="file" accept="image/*"></div>'
-          + '<div><label>追画像倍率%</label><input type="number" value="'+slot.overlayScale+'" min="10" max="300"></div>'
-          + '<div><label>回転°</label><input type="number" value="'+slot.overlayRot+'" step="1"></div>'
-          + '<div><label>追画像X</label><input type="number" value="'+slot.overlayOffX+'" step="1"></div>'
-          + '<div><label>追画像Y</label><input type="number" value="'+slot.overlayOffY+'" step="1"></div>';
-        const inputs2 = grid2.querySelectorAll('input');
-        const up = inputs2[0];
-        up.onchange = (e)=>{
-          slot.overlayFile = e.target.files && e.target.files[0] ? e.target.files[0] : null;
-          draw();
-        };
-        inputs2[1].oninput = e=>{ slot.overlayScale=Number(e.target.value||100); draw(); };
-        inputs2[2].oninput = e=>{ slot.overlayRot=Number(e.target.value||0); draw(); };
-        inputs2[3].oninput = e=>{ slot.overlayOffX=Number(e.target.value||0); draw(); };
-        inputs2[4].oninput = e=>{ slot.overlayOffY=Number(e.target.value||0); draw(); };
-        div.appendChild(grid2);
+  // ---------- Images cache ----------
+  const imageCache = new Map(); // url -> ImageBitmap
+  async function getImageBitmap(url){
+    if(imageCache.has(url)) return imageCache.get(url);
+    const blob = await fetchImageBlob(url);
+    const bmp  = await createImageBitmap(blob);
+    imageCache.set(url, bmp);
+    return bmp;
+  }
 
-        const grid3 = document.createElement('div');
-        grid3.className='ctrl3';
-        grid3.innerHTML = ''
-          + '<div><label>文字サイズ</label><input type="number" value="'+slot.textSize+'" min="10"></div>'
-          + '<div><label>文字X</label><input type="number" value="'+slot.textOffX+'" step="1"></div>'
-          + '<div><label>文字Y</label><input type="number" value="'+slot.textOffY+'" step="1"></div>';
-        const [ts,tx,ty] = grid3.querySelectorAll('input');
-        ts.oninput = e=>{ slot.textSize=Number(e.target.value||86); draw(); };
-        tx.oninput = e=>{ slot.textOffX=Number(e.target.value||0); draw(); };
-        ty.oninput = e=>{ slot.textOffY=Number(e.target.value||0); draw(); };
-        div.appendChild(grid3);
-
-      }else{
-        const p = document.createElement('div');
-        p.className='note'; p.textContent='（未配置）';
-        div.appendChild(p);
-      }
-      elSlots.appendChild(div);
+  // ---------- Font handling ----------
+  async function loadCustomFont(file){
+    const name = file.name.replace(/\.(ttf|otf|woff2?|TTF|OTF|WOFF2?)$/,'');
+    const url  = URL.createObjectURL(file);
+    try {
+      const face = new FontFace(name, \`url(\${url})\`);
+      await face.load();
+      (document as any).fonts?.add?.(face);
+      fontLoadedName = name;
+      el('fontFamily').value = name;
+    } catch(e){
+      console.error('font load failed', e);
+      alert('フォントの読み込みに失敗しました。TTF/OTF/WOFF をお試しください。');
     }
   }
 
-  // ======= Background pick =======
-  async function onPickBg(e){
-    const f = e.target.files && e.target.files[0];
+  // ---------- Preview & Export ----------
+  function ensureCanvasSize(){
+    const scale = CANVAS_WIDTH; // width
+    let bgW = scale, bgH = Math.round(scale * 9/16); // fallback 16:9
+    if(bgImg){
+      const ratio = CANVAS_WIDTH / bgImg.naturalWidth;
+      bgW = CANVAS_WIDTH;
+      bgH = Math.round(bgImg.naturalHeight * ratio);
+    }
+    preview.width = bgW;
+    preview.height= bgH;
+  }
+
+  function textXYInTile(tileRect, pos, dx, dy){
+    const [ax, ay] = anchorToXY(pos);
+    const {x,y} = posFromAnchor(ax, ay, tileRect.w, tileRect.h);
+    return { x: tileRect.x + x + dx, y: tileRect.y + y + dy };
+  }
+
+  async function draw(toExport=false){
+    ensureCanvasSize();
+    const {cols, rows, tileW, tileH, gap, radius, offX, offY, pad} = layout;
+    const {gridW, gridH} = measureGrid();
+    const c = ctx;
+    c.clearRect(0,0,preview.width, preview.height);
+    // background
+    if(bgImg){
+      const ratio = CANVAS_WIDTH / bgImg.naturalWidth;
+      const w = CANVAS_WIDTH;
+      const h = Math.round(bgImg.naturalHeight * ratio);
+      c.drawImage(bgImg, 0, 0, w, h);
+    } else {
+      // fallback bg
+      c.fillStyle = '#0f172a';
+      c.fillRect(0,0,preview.width, preview.height);
+    }
+
+    // offset to center grid
+    const originX = Math.floor((preview.width - gridW)/2) + offX;
+    const originY = Math.floor((preview.height - gridH)/2) + offY;
+
+    // guides
+    if(layout.guide==='on' && !toExport){
+      for(let r=0;r<rows;r++){
+        for(let cc=0;cc<cols;cc++){
+          const x = originX + gap + cc*(tileW+gap);
+          const y = originY + gap + r*(tileH+gap);
+          drawRoundRect(c,x,y,tileW,tileH,radius);
+          c.fillStyle = 'rgba(255,255,255,0.03)';
+          c.fill();
+          c.strokeStyle = 'rgba(255,255,255,0.06)';
+          c.lineWidth = 1;
+          c.stroke();
+        }
+      }
+    }
+
+    // draw picked tiles
+    for(let i=0;i<picked.length;i++){
+      const r = Math.floor(i/layout.cols);
+      const cc= i%layout.cols;
+      if(r>=rows) break;
+      const x = originX + gap + cc*(tileW+gap);
+      const y = originY + gap + r*(tileH+gap);
+      const rect = {x,y,w:tileW,h:tileH};
+
+      const g = picked[i];
+      // icon image
+      try{
+        const bmp = await getImageBitmap(g.imageUrl);
+        const maxW = tileW - pad*2;
+        const maxH = tileH - pad*2;
+        const ratio = Math.min(maxW/bmp.width, maxH/bmp.height) * ( (g.scale||100) / 100 ) * (layout.iconScale/100);
+        const iw = bmp.width * ratio;
+        const ih = bmp.height * ratio;
+        const ix = x + (tileW - iw)/2 + (g.dx||0);
+        const iy = y + (tileH - ih)/2 + (g.dy||0);
+        c.drawImage(bmp, ix, iy, iw, ih);
+      }catch(e){/* ignore */}
+
+      // extra overlay image
+      if(g.extraBlobUrl){
+        try{
+          const img = await createImageBitmap(await (await fetch(g.extraBlobUrl)).blob()).catch(()=>null);
+          if(img){
+            const maxW = tileW - pad*2;
+            const maxH = tileH - pad*2;
+            const ratio = Math.min(maxW/img.width, maxH/img.height) * ((g.extraScale||100)/100);
+            const iw = img.width * ratio;
+            const ih = img.height * ratio;
+            const ix = x + (tileW - iw)/2 + (g.extraDx||0);
+            const iy = y + (tileH - ih)/2 + (g.extraDy||0);
+            c.drawImage(img, ix, iy, iw, ih);
+          }
+        }catch(e){}
+      }
+
+      // text
+      const txt = g.text || globalText.text;
+      if(txt){
+        const size = g.text ? (g.textSize||globalText.size) : globalText.size;
+        const pos = g.text ? (g.textPos||globalText.pos) : globalText.pos;
+        const dx = g.text ? (g.textDx||0) : globalText.dx;
+        const dy = g.text ? (g.textDy||0) : globalText.dy;
+        const color = g.text ? (g.textColor||globalText.color) : globalText.color;
+        const stroke = g.text ? !!g.textStroke : !!globalText.stroke;
+
+        const {x:tx, y:ty} = textXYInTile(rect, pos, dx, dy);
+        const fam = (el('fontFamily').value || fontLoadedName || 'system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans JP", sans-serif');
+        c.font = \`bold \${size}px \${fam}\`;
+        c.textAlign = 'center';
+        c.textBaseline = 'middle';
+        if(stroke){ c.lineWidth = Math.max(2, Math.floor(size/10)); c.strokeStyle = '#000'; c.strokeText(txt, tx, ty); c.strokeStyle='#fff'; c.lineWidth/=2; c.strokeText(txt, tx, ty); }
+        c.fillStyle = color;
+        c.fillText(txt, tx, ty);
+      }
+    }
+
+    // zoom scale (CSS)
+    const scale = (parseInt(zoom.value||100)/100);
+    preview.style.transform = \`scale(\${scale})\`;
+    preview.style.transformOrigin = 'top left';
+    zoomLabel.textContent = \`\${Math.round(scale*100)}%\`;
+  }
+
+  function exportPng(){
+    draw(true).then(()=>{
+      try{
+        const url = preview.toDataURL('image/png');
+        const a = document.createElement('a');
+        a.href = url; a.download = 'gift_board.png'; a.click();
+      }catch(e){
+        alert('PNG出力に失敗しました。');
+      } finally {
+        draw(false);
+      }
+    });
+  }
+
+  // ---------- Events ----------
+  el('loadBtn').onclick = async ()=>{
+    try{
+      picked=[]; renderSlots(); draw();
+      await loadSheet(sheetId.value.trim(), gid.value.trim());
+    }catch(e){
+      console.error(e);
+      alert('シートの読み込みに失敗しました。権限とURL/CORSを確認してください。');
+    }
+  };
+  el('bgBtn').onclick = ()=> el('bgFile').click();
+  el('bgFile').onchange = (ev)=>{
+    const f = ev.target.files?.[0];
     if(!f) return;
-    try{
-      const bmp = await blobToBitmap(f);
-      S.bgBitmap = bmp;
-      S.canvasW = bmp.width;
-      S.canvasH = bmp.height;
-      elPreview.width = S.canvasW;
-      elPreview.height = S.canvasH;
-      draw();
-    }catch(err){
-      alert('背景画像の読み込みに失敗しました');
-    }
-  }
+    const url = URL.createObjectURL(f);
+    const img = new Image();
+    img.onload = ()=>{ bgImg = img; draw(); URL.revokeObjectURL(url); };
+    img.src = url;
+  };
+  el('saveBtn').onclick = exportPng;
 
-  // ======= Drawing (preview) =======
-  async function draw(){
-    // clear
-    ctx.fillStyle = '#0c1016';
-    ctx.fillRect(0,0,elPreview.width, elPreview.height);
-    // bg
-    if(S.bgBitmap) ctx.drawImage(S.bgBitmap,0,0);
-    const g = gridSize();
-    const off = centerOffset(elPreview.width, elPreview.height, g.width, g.height);
+  // layout inputs
+  document.querySelectorAll('#cols,#rows,#tileW,#tileH,#gap,#radius,#offX,#offY,#pad,#iconScale,#guide,#globalText,#globalTextSize,#globalTextPos,#globalTextDx,#globalTextDy,#globalColor,#globalStroke')
+    .forEach(i => i.addEventListener('input', ()=>{ updateFromInputs(); draw(); saveLocal(); }));
 
-    // guide
-    if(elGuide.value==='ON'){
-      ctx.save();
-      ctx.strokeStyle = 'rgba(255,255,255,0.08)';
-      ctx.fillStyle = 'rgba(255,255,255,0.02)';
-      for(let r=0;r<g.rows;r++){
-        for(let c=0;c<g.cols;c++){
-          const x = off.x + g.gap + c*(g.tileW+g.gap);
-          const y = off.y + g.gap + r*(g.tileH+g.gap);
-          rr(ctx,x,y,g.tileW,g.tileH, Number(elRadius.value||0));
-          ctx.fill(); ctx.stroke();
-        }
-      }
-      ctx.restore();
-    }
+  zoom.oninput = ()=>{ zoomLabel.textContent = \`\${zoom.value}%\`; draw(); };
 
-    if(!S._bmpCache) S._bmpCache = new Map();
+  // font
+  el('fontBtn').onclick = ()=> el('fontFile').click();
+  el('fontFile').onchange = (e)=>{ const f = e.target.files?.[0]; if(f) loadCustomFont(f).then(draw); };
+  el('fontFamily').addEventListener('input', ()=> draw());
 
-    for(let i=0;i<g.rows*g.cols;i++){
-      const slot = S.slots[i];
-      const r = Math.floor(i/g.cols), c=i%g.cols;
-      const x = off.x + g.gap + c*(g.tileW+g.gap);
-      const y = off.y + g.gap + r*(g.tileH+g.gap);
-      if(!slot) continue;
+  // save/restore
+  el('saveCfg').onclick = ()=>{ saveLocal(); alert('保存しました'); };
+  el('loadCfg').onclick = ()=>{ loadLocal(); applyToInputs(); renderSlots(); draw(); };
+  el('resetCfg').onclick = ()=>{ localStorage.removeItem('giftboard_v3'); location.reload(); };
+  el('clearBtn').onclick = ()=>{ picked = []; renderSlots(); draw(); saveLocal(); };
 
-      // base gift image
-      if(slot.gift && slot.gift.imageUrl){
-        let bmp = S._bmpCache.get(slot.gift.imageUrl);
-        if(!bmp){
-          try{
-            const blob = await fetchImageBlobWithFallback(slot.gift.imageUrl);
-            bmp = await blobToBitmap(blob);
-            S._bmpCache.set(slot.gift.imageUrl, bmp);
-          }catch(e){ bmp = null; }
-        }
-        if(bmp){
-          const scale = (slot.giftScale||100)/100;
-          const pad = 14;
-          const maxW = g.tileW - 2*pad, maxH = g.tileH - 2*pad;
-          const ratio = Math.min(maxW/bmp.width, maxH/bmp.height) * scale;
-          const iw = bmp.width*ratio, ih=bmp.height*ratio;
-          const ix = x + (g.tileW-iw)/2 + (slot.giftOffX||0);
-          const iy = y + (g.tileH-ih)/2 + (slot.giftOffY||0);
-          ctx.drawImage(bmp, ix, iy, iw, ih);
-        }
-      }
+  // ---------- Bootstrap ----------
+  loadLocal();
+  applyToInputs();
+  // default sheet
+  if(!sheetId.value) sheetId.value = DEFAULT_SHEET;
+  if(!gid.value) gid.value = DEFAULT_GID;
 
-      // overlay image
-      if(slot.overlayFile){
-        if(!slot._overlayBmp || slot._overlayBmpFile !== slot.overlayFile){
-          try{
-            slot._overlayBmp = await blobToBitmap(slot.overlayFile);
-            slot._overlayBmpFile = slot.overlayFile;
-          }catch(e){ slot._overlayBmp = null; }
-        }
-        const bmp2 = slot._overlayBmp;
-        if(bmp2){
-          const scale2 = (slot.overlayScale||100)/100;
-          const pad = 14;
-          const maxW2 = g.tileW - 2*pad, maxH2 = g.tileH - 2*pad;
-          const ratio2 = Math.min(maxW2/bmp2.width, maxH2/bmp2.height) * scale2;
-          const iw2 = bmp2.width*ratio2, ih2=bmp2.height*ratio2;
-          const cx = x + g.tileW/2 + (slot.overlayOffX||0);
-          const cy = y + g.tileH/2 + (slot.overlayOffY||0);
-          ctx.save();
-          ctx.translate(cx, cy);
-          ctx.rotate((slot.overlayRot||0) * Math.PI/180);
-          ctx.drawImage(bmp2, -iw2/2, -ih2/2, iw2, ih2);
-          ctx.restore();
-        }
-      }
-
-      // text on top
-      drawSlotText(ctx, slot, x, y, g);
-    }
-  }
-
-  // ======= Export =======
-  async function exportPNG(){
-    if(!S.bgBitmap){
-      alert('背景画像を選んでください（PNG推奨）');
-      return;
-    }
-    const g = gridSize();
-    const off = centerOffset(elPreview.width, elPreview.height, g.width, g.height);
-    const cvs = document.createElement('canvas');
-    cvs.width = elPreview.width; cvs.height = elPreview.height;
-    const c = cvs.getContext('2d');
-
-    c.drawImage(S.bgBitmap,0,0);
-
-    if(!S._bmpCache) S._bmpCache = new Map();
-
-    for(let i=0;i<g.rows*g.cols;i++){
-      const slot = S.slots[i];
-      const r = Math.floor(i/g.cols), cidx=i%g.cols;
-      const x = off.x + g.gap + cidx*(g.tileW+g.gap);
-      const y = off.y + g.gap + r*(g.tileH+g.gap);
-      if(!slot) continue;
-
-      // base gift
-      if(slot.gift && slot.gift.imageUrl){
-        let bmp = S._bmpCache.get(slot.gift.imageUrl);
-        if(!bmp){
-          try{
-            const blob = await fetchImageBlobWithFallback(slot.gift.imageUrl);
-            bmp = await blobToBitmap(blob);
-            S._bmpCache.set(slot.gift.imageUrl, bmp);
-          }catch(e){ bmp = null; }
-        }
-        if(bmp){
-          const scale = (slot.giftScale||100)/100;
-          const pad = 14;
-          const maxW = g.tileW - 2*pad, maxH = g.tileH - 2*pad;
-          const ratio = Math.min(maxW/bmp.width, maxH/bmp.height) * scale;
-          const iw = bmp.width*ratio, ih=bmp.height*ratio;
-          const ix = x + (g.tileW-iw)/2 + (slot.giftOffX||0);
-          const iy = y + (g.tileH-ih)/2 + (slot.giftOffY||0);
-          c.drawImage(bmp, ix, iy, iw, ih);
-        }
-      }
-      // overlay
-      if(slot.overlayFile){
-        if(!slot._overlayBmp || slot._overlayBmpFile !== slot.overlayFile){
-          try{
-            slot._overlayBmp = await blobToBitmap(slot.overlayFile);
-            slot._overlayBmpFile = slot.overlayFile;
-          }catch(e){ slot._overlayBmp = null; }
-        }
-        const bmp2 = slot._overlayBmp;
-        if(bmp2){
-          const scale2 = (slot.overlayScale||100)/100;
-          const pad = 14;
-          const maxW2 = g.tileW - 2*pad, maxH2 = g.tileH - 2*pad;
-          const ratio2 = Math.min(maxW2/bmp2.width, maxH2/bmp2.height) * scale2;
-          const iw2 = bmp2.width*ratio2, ih2=bmp2.height*ratio2;
-          const cx = x + g.tileW/2 + (slot.overlayOffX||0);
-          const cy = y + g.tileH/2 + (slot.overlayOffY||0);
-          c.save();
-          c.translate(cx, cy);
-          c.rotate((slot.overlayRot||0) * Math.PI/180);
-          c.drawImage(bmp2, -iw2/2, -ih2/2, iw2, ih2);
-          c.restore();
-        }
-      }
-      // text (optional include)
-      if(elExportText.checked){
-        drawSlotText(c, slot, x, y, g);
-      }
-    }
-
-    try{
-      const url = cvs.toDataURL('image/png');
-      const a = document.createElement('a');
-      a.href = url; a.download = 'gift_board.png'; a.click();
-    }catch{
-      alert('出力に失敗しました。別ドメイン画像が混じる場合はプロキシを使ってください。');
-    }
-  }
-
-  function escapeHtml(s){return String(s||'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
-
-  // ======= Init =======
-  elSheetId.value = FIXED_SHEET_ID;
-  elGid.value = FIXED_GID;
-  if (!elProxy.value) elProxy.value = DEFAULT_PROXY;
-
-  renderSlots();
+  // initial draw with empty bg (auto size)
   draw();
 
-})();</script>
+  // utility
+  function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]); }
+})();
+</script>
+
 </body>
 </html>
